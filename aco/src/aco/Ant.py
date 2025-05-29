@@ -1,5 +1,5 @@
 class Ant:
-    def __init__(self, number_of_nodes: int):
+    def __init__(self):
         # Parameter to control impact of pheromones on path decision making
         self.alpha = 1
 

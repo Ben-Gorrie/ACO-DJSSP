@@ -15,7 +15,7 @@ class Map:
         # Matrix to store the distance between nodes
         # Eg: if distance_matrx[1, 2] = 12, the distance between node 1 and node 2 is 12
         # This matrix is currently symmetric, but doesn't need to be
-        self.distance_matrix = np.zeros((len(nodes, len(nodes))))
+        self.distance_matrix = np.zeros((len(nodes), len(nodes)))
         self._compute_distance_matrix()
 
         # Matrix to store pheromone levels between nodes
