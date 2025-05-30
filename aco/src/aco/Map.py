@@ -61,6 +61,13 @@ class Map:
         """
         self.pheromone_matrix *= self.pheromone_evaporation_coefficient
 
+    def distribute_ants(self):
+        """
+        Uniformly distribute the ants across all the nodes
+        """
+        for idx, ant in enumerate(self.ants):
+            ant.path.append(idx % len(self.nodes))
+
     def move_ants(self):
         """
         Move all ants one step forward
