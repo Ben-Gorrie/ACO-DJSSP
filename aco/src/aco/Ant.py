@@ -17,6 +17,7 @@ class Ant:
         # Path the ant has taken so far
         # If this were [0, 3], it started at node 0 and went to node 3
         # Nodes are ordered in the same way as they are ordered in Map
+        # Note that this path must end up closed
         self.path = []
 
     def move_probabilities(self, map_instance):
@@ -43,7 +44,7 @@ class Ant:
         """
         Choose next node given the possible remaining nodes and probabilities
         """
-
+        # Choose a node from the choices available
         probabilities, nodes_remaining = self.move_probabilities(map_instance)
         assert len(probabilities) == len(nodes_remaining)
         return choices(nodes_remaining, weights=probabilities)[0]
@@ -52,16 +53,46 @@ class Ant:
         """
         Compute length of total tour. Should only be called at end of tour.
         """
-        pass
+        total_length = 0
 
-    def deposit_pheremones(self, map_instance):
+        for i in range(len(self.path) - 1):
+            leg1 = self.path[i]
+            leg2 = self.path[i + 1]
+            total_length += map_instance.distance_matrix[leg1, leg2]
+
+        return total_length
+
+    def deposit_pheromones(self, map_instance):
         """"
-        Deposit pheremones on the path visited
+        Deposit pheromones on the path visited
         """
-        pass
+        # Reverse the path. Not needed for symmetric problems
+        path_back = self.path[::-1]
+
+        tour_length = self.calculate_tour_length(map_instance)
+
+        pheromones_to_deposit = self.Q / tour_length
+
+        # As the path loops, -1 here to avoid out of bounds
+        for i in range(len(path_back) - 1):
+            current_node = path_back[i]
+            next_node = path_back[i + 1]
+            map_instance.pheromone_matrix[next_node,
+                                          current_node] += pheromones_to_deposit
+            # Make symmetric here, but does not have to be the case
+            map_instance.pheromone_matrix[current_node,
+                                          next_node] += pheromones_to_deposit
+
+    def reset_position(self):
+        """
+        Reset the ant to its starting position.
+        As ants are uniformly distributed, each ant has a different "start"
+        """
+        self.path = self.path[0:1]
 
     def move(self, map_instance):
         """
         Move the ant from its current node to the next
         """
-        pass
+        next_node = self.choose_node(map_instance)
+        self.path.append(next_node)
