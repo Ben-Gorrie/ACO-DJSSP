@@ -1,5 +1,6 @@
 from aco import Map, Ant
 import math
+import numpy as np
 
 nodes = [
     (54, 67),
@@ -73,10 +74,57 @@ def test_pheromone_decay():
             map_instance.pheromone_evaporation_coefficient == new_pheromone_matrix).all()
 
 
-def test_distribute_ant():
+def test_distribute_ants():
     map_instance.distribute_ants()
 
     # Ensure that ants are evenly distributed among the nodes
     for idx, ant in enumerate(ants):
         assert ant.path[-1] == idx % len(map_instance.nodes)
         assert ant.path[-1] < len(map_instance.nodes)
+
+
+def test_move_ants():
+    old_map_instance_path_lengths = len(map_instance.ants[0].path)
+    map_instance.move_ants()
+
+    # Ensure that moving ants increases their path length
+    for idx, ant in enumerate(map_instance.ants):
+        assert len(ant.path) > old_map_instance_path_lengths
+
+
+def test_find_paths():
+    ants = [Ant() for i in range(len(nodes))]
+
+    map_instance = Map(nodes, ants)
+
+    map_instance.distribute_ants()
+
+    map_instance.find_paths()
+
+    for ant in map_instance.ants:
+        # Ensure that the paths are of length len(Nodes) + 1
+        assert len(ant.path) == len(map_instance.nodes) + 1
+        # Ensure that paths are closed
+        assert ant.path[-1] == ant.path[0]
+        # Ensure that no duplicates are in the path (except for first and last)
+        assert len(ant.path[:-1]) == len(set(ant.path[:-1]))
+
+
+def test_step():
+    ants = [Ant() for i in range(len(nodes))]
+
+    map_instance = Map(nodes, ants)
+
+    map_instance.distribute_ants()
+
+    old_pheromones = map_instance.pheromone_matrix.copy()
+
+    map_instance.step()
+    new_pheromones = map_instance.pheromone_matrix.copy()
+
+    # Only true if problem is symmetric
+    assert new_pheromones[1, 2] == new_pheromones[2, 1]
+    # Ensure paths have been reset
+    assert len(map_instance.ants[0].path) == 1
+    # Ensure pheromones change after a step
+    assert np.sum(old_pheromones - new_pheromones) != 0

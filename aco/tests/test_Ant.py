@@ -39,12 +39,12 @@ ants = [Ant() for i in range(len(nodes))]
 
 map_instance = Map(nodes, ants)
 
+ant = Ant()
+path = [1, 5, 4]
+ant.path = path
+
 
 def test_move_probabilities():
-    ant = Ant()
-    path = [1, 5, 4]
-    ant.path = path
-
     # Make sure that the remaining nodes are correct
     probabilities, nodes_remaining = ant.move_probabilities(map_instance)
     assert (nodes_remaining == np.delete(np.array([i for i in range(
@@ -56,10 +56,6 @@ def test_move_probabilities():
 
 
 def test_choose_node():
-    ant = Ant()
-    path = [1, 5, 4]
-    ant.path = path
-
     # Increase probability the ant goes to node 10
     map_instance.pheromone_matrix[4, 10] *= 10
 
@@ -77,3 +73,43 @@ def test_choose_node():
 
     # Ensure the ant is weighted towards going to the 10th node
     assert counter > 5
+
+
+def test_calculate_tour_length():
+    map_instance.distance_matrix[1, 5] = 3.4
+    map_instance.distance_matrix[5, 4] = 2.7
+
+    # Ensure tour length is calculated correctly
+    assert ant.calculate_tour_length(map_instance) == 3.4 + 2.7
+
+
+def test_deposit_pheromones():
+    old_pheromones = map_instance.pheromone_matrix.copy()
+    ant.deposit_pheromones(map_instance)
+    new_pheromones = map_instance.pheromone_matrix.copy()
+
+    # Ensure that adding new pheromones increases the pheromone trail
+    assert old_pheromones[1, 5] < new_pheromones[1, 5]
+    assert old_pheromones[5, 4] < new_pheromones[5, 4]
+
+
+def test_move():
+    old_path = ant.path.copy()
+    ant.move(map_instance)
+    new_path = ant.path.copy()
+
+    # Make sure we are not closing out the path
+    if len(old_path) < len(nodes):
+        # Ensure that the new path is longer than the old path
+        assert len(old_path) < len(new_path)
+
+        # Ensure that the newly added node was not already in the path
+        assert new_path[-1] not in old_path
+
+
+def test_reset_position():
+    old_path = ant.path.copy()
+    ant.reset_position()
+
+    # Ensure that resetting the position of the ant is done correctly
+    assert old_path[0] == ant.path[0]
