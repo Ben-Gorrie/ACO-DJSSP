@@ -106,15 +106,66 @@ class Map:
         for ant in self.ants:
             ant.reset_position()
 
+    def normalise_path(self, path):
+        """
+        Normalise a cyclic path by rotating so it starts at the smallest node.
+        Removes the duplicated end value.
+        """
+        if path[0] == path[-1]:
+            path = path[:-1]  # remove duplicate end
+
+        # Find index of minimum node
+        min_idx = path.index(min(path))
+
+        # Rotate path so it starts at the smallest node
+        rotated = path[min_idx:] + path[:min_idx]
+
+        # Ensure that the reverse path is treated the same as the forward one
+        reversed_rotated = list(reversed(path[min_idx:] + path[:min_idx]))
+
+        return min(rotated, reversed_rotated)
+
+    def paths_stagnant(self):
+        """
+        Compares the paths of each ant after a full cycle.
+        If each ant performs the same cycle we have reached
+        a stagnant state, so we return True.
+        Note that we ignore rotation direction and starting point
+        """
+        base_path = self.normalise_path(self.ants[0].path)
+        for ant in self.ants[1:]:
+            if base_path != self.normalise_path(ant.path):
+                return False
+
+        return True
+
     def step(self):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
-        updating the pheromones and resetting them to the start
+        updating the pheromones and resetting them to the start.
+        Returns True if stagnation is detected after this cycle
         """
         # Find possible paths
         self.find_paths()
         # Update pheromones
         self.pheromone_update()
-        # Reset position of ants
-        self.reset_ants()
+        # Check for stagnating behaviour
+        stagnated = self.paths_stagnant()
+        # Reset position of ants if not stagnated
+        if not stagnated:
+            self.reset_ants()
+
+        return stagnated
+
+    def main(self, max_cycles=10000, spread_ants=True):
+        if spread_ants:
+            self.distribute_ants()
+        for i in range(max_cycles):
+            if self.step():
+                print(f"Stagnation detected at cycle {i + 1}. Terminating.")
+                print(f"Final path is :\n{self.ants[0].path} of length {
+                      self.ants[0].calculate_tour_length(self)}")
+                break
+        else:
+            print(f"Reached max iteration count ({max_cycles}).")

@@ -128,3 +128,53 @@ def test_step():
     assert len(map_instance.ants[0].path) == 1
     # Ensure pheromones change after a step
     assert np.sum(old_pheromones - new_pheromones) != 0
+
+
+def test_square():
+
+    nodes = [(0, 0), (0, 1), (1, 1), (1, 0)]
+    ants = [Ant() for i in range(len(nodes))]
+
+    map_instance = Map(nodes, ants)
+
+    map_instance.main()
+
+    assert map_instance.ants[0].calculate_tour_length(map_instance) == 4
+
+
+def generate_ngon(n, radius=1.0):
+    """
+    Generate n points evenly spaced on a circle (regular polygon)
+    """
+    return [(radius * math.cos(2 * math.pi * i / n),
+             radius * math.sin(2 * math.pi * i / n)) for i in range(n)]
+
+
+def run_ngon_test(n, tolerance=1e-2, max_cycles=5000):
+    """
+    Test ACO on an N-gon inscrined in unit circle.
+    Verifies that all ants converge to the minimal perimeter tour.
+    """
+    nodes = generate_ngon(n)
+    ants = [Ant() for _ in range(n)]
+    map_instance = Map(nodes, ants)
+
+    map_instance.main(max_cycles=max_cycles)
+
+    # N * side length
+    expected_length = 2 * n * math.sin(math.pi / n)
+
+    # Test that all ants have the same (optimal) tour length within tolerance
+    for ant in map_instance.ants:
+        length = ant.calculate_tour_length(map_instance)
+        assert math.isclose(length, expected_length, rel_tol=tolerance), \
+            f"Ant tour length {length:.4f} != expected {expected_length:.4f}"
+
+    print(f"Test passed for {
+          n}-gon: all ants found tour of length ~{expected_length:.4f}")
+
+
+def test_ngons():
+    n_sides = [4, 5, 6, 7, 8, 9, 10]
+    for n in n_sides:
+        run_ngon_test(n)
