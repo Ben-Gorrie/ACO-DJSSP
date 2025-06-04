@@ -139,33 +139,76 @@ class Map:
 
         return True
 
+    def find_best_path(self):
+        """
+        Finds the best path found by an ant.
+        Returns the path and its associated length
+        """
+        best_path = None
+        best_length = float("inf")
+        for ant in self.ants:
+            length = ant.calculate_tour_length(self)
+            if length < best_length:
+                best_length = length
+                best_path = ant.path.copy()
+
+        return best_path, best_length
+
     def step(self):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
         updating the pheromones and resetting them to the start.
-        Returns True if stagnation is detected after this cycle
+        Keeps track of the best path this cycle.
+        Returns:
+            stagnated (bool): Whether all ants converged to the same tour
+            best_path (list): Best path found this cycle
+            best_length (float): Length of best path
         """
         # Find possible paths
         self.find_paths()
+
+        # Keep the best path found
+        best_path, best_length = self.find_best_path()
+
         # Update pheromones
         self.pheromone_update()
+
         # Check for stagnating behaviour
         stagnated = self.paths_stagnant()
+
         # Reset position of ants if not stagnated
         if not stagnated:
             self.reset_ants()
 
-        return stagnated
+        return stagnated, best_path, best_length
 
-    def main(self, max_cycles=10000, spread_ants=True):
+    def main(self, max_cycles=10000, spread_ants=True, verbose=True):
         if spread_ants:
             self.distribute_ants()
+
+        global_best_path = None
+        global_best_length = float("inf")
         for i in range(max_cycles):
-            if self.step():
-                print(f"Stagnation detected at cycle {i + 1}. Terminating.")
-                print(f"Final path is :\n{self.ants[0].path} of length {
-                      self.ants[0].calculate_tour_length(self)}")
+            stagnated, cycle_best_path, cycle_best_length = self.step()
+
+            if cycle_best_length < global_best_length:
+                global_best_length = cycle_best_length
+                global_best_path = cycle_best_path
+                if verbose:
+                    print(f"New best path of length {
+                          global_best_length} found at cycle {i + 1}.")
+
+            if stagnated:
+                if verbose:
+                    print(f"Stagnation detected at cycle {
+                          i + 1}. Terminating.")
                 break
         else:
-            print(f"Reached max iteration count ({max_cycles}).")
+            if verbose:
+                print(f"Reached max iteration count ({max_cycles}).")
+
+        print(f"Best found path is {
+              global_best_path} with a length of {global_best_length}.")
+
+        return global_best_path, global_best_length
