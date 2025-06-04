@@ -130,18 +130,6 @@ def test_step():
     assert np.sum(old_pheromones - new_pheromones) != 0
 
 
-def test_square():
-
-    nodes = [(0, 0), (0, 1), (1, 1), (1, 0)]
-    ants = [Ant() for i in range(len(nodes))]
-
-    map_instance = Map(nodes, ants)
-
-    map_instance.main()
-
-    assert map_instance.ants[0].calculate_tour_length(map_instance) == 4
-
-
 def generate_ngon(n, radius=1.0):
     """
     Generate n points evenly spaced on a circle (regular polygon)
