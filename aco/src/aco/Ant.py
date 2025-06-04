@@ -36,7 +36,13 @@ class Ant:
                                * (map_instance.desirability_matrix[current_position, y]**self.beta) for y in nodes_remaining])
         denominator = np.sum(numerators)
 
-        probabilities = numerators / denominator
+        if denominator == 0 or not np.isfinite(denominator):
+            # Uniform distribution fallback
+            # Necessary to prevent crashing when iterating for too long and some paths fade
+            probabilities = np.ones(
+                len(nodes_remaining)) / len(nodes_remaining)
+        else:
+            probabilities = numerators / denominator
 
         return probabilities, nodes_remaining
 

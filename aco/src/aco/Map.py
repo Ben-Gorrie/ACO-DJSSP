@@ -183,7 +183,7 @@ class Map:
 
         return stagnated, best_path, best_length
 
-    def main(self, max_cycles=10000, spread_ants=True, verbose=True):
+    def main(self, max_cycles=1000, spread_ants=True, verbose=True):
         if spread_ants:
             self.distribute_ants()
 

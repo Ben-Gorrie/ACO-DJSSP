@@ -166,3 +166,13 @@ def test_ngons():
     n_sides = [4, 5, 6, 7, 8, 9, 10]
     for n in n_sides:
         run_ngon_test(n)
+
+
+def test_oliver30():
+    ants = [Ant() for _ in range(len(nodes))]
+    map_instance = Map(nodes, ants)
+
+    best_path, best_length = map_instance.main()
+    # Ensure ants find best solution within 5%
+    # https://stevedower.id.au/research/oliver-30
+    assert math.isclose(best_length, 423.741, rel_tol=0.05)
