@@ -1,3 +1,4 @@
+# Class to define an operation in a job
 class Operation:
     def __init__(self, index, job_id, operation_id, machine_id, processing_time):
         """

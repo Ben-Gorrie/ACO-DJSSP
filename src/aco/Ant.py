@@ -3,7 +3,7 @@ from random import choices
 
 
 class Ant:
-    def __init__(self, alpha=1, beta=6):
+    def __init__(self, alpha=2, beta=3):
         # Parameter to control impact of pheromones on path decision making
         self.alpha = alpha
 
@@ -20,15 +20,18 @@ class Ant:
     def get_eligible_operations(self, all_operations):
         """
         Returns operations whose job-predecessors have already been scheduled.
-        Uses self.path as the list of already-scheduled operations.
+        If an operation is the first in a job, it is automatically eligible
+        (unless it has already been scheduled)
         """
         eligible = []
         scheduled_indices = {op.index for op in self.path}
 
         for op in all_operations:
+            # Skip all already scheduled operations
             if op.index in scheduled_indices:
                 continue
 
+            # If the operation starts a new job, it is eligible
             if op.operation_id == 0:
                 eligible.append(op)
             else:

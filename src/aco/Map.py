@@ -14,7 +14,6 @@ class Map:
         n_ops = len(self.operations)
 
         # Matrix to store pheromone levels between nodes
-        # The indexing is the same as above, for example:
         # pheromone_matrix[1, 2] = 0.7 means the amount of pheromone deposited between node 1 and 2 is 0.7
         self.pheromone_matrix = np.full((n_ops, n_ops), 0.01)
 
@@ -78,9 +77,8 @@ class Map:
         updating the pheromones and resetting them to the start.
         Keeps track of the best path this cycle.
         Returns:
-            stagnated (bool): Whether all ants converged to the same tour
             best_path (list): Best path found this cycle
-            best_length (float): Length of best path
+            best_makespan (float): Makespan of best path
         """
         # Find possible paths
         self.construct_solutions()
