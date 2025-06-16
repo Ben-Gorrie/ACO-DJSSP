@@ -3,7 +3,7 @@ from random import choices
 
 
 class Ant:
-    def __init__(self, alpha=2, beta=3):
+    def __init__(self, alpha=2, beta=2):
         # Parameter to control impact of pheromones on path decision making
         self.alpha = alpha
 
