@@ -38,3 +38,17 @@
 - **Plan before next meeting**
     - Finish the project plan before the deadline.
     - Once this is done, start working on a scheduler using ants. Start with a static scheduler for now, and then try to make it dynamic later.
+
+## 17/06/2025
+- **Present**: Benjamin Gorrie (joined online), Marijan Beg
+- **Key points discussed**
+    - Showed Marijan current basic state of JSSP solved with ACO. Marijan had good suggestions regarding how the current algorithm could be improved.
+    - Marijan saw my project plan and was happy with what was written. 
+    - ACO elitism was brought up as an improvement to the current Ant System algorithm. Currently, ants are diverging away from the local/global minimum as the suboptimal pheromone trails are drowning out the current best solution.
+- **Feedback received**
+    - Marijan happy with the direction, and liked the idea of applying the project to a real hospital schedule.
+    - Being smart with data allows to simplify code (e.g. can schedule a job for 1.2 time instead of programming a 0.2 time unit gap between operations).
+- **Plan before next meeting**
+    - Implement Ant Elitism.
+    - Make JSSP solving more robust.
+    - Start thinking about how to implement a dynamic DJSSP, depending on how good the static variant performs.
