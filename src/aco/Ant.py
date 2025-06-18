@@ -3,7 +3,7 @@ from random import choices
 
 
 class Ant:
-    def __init__(self, alpha=2, beta=2):
+    def __init__(self, alpha=3, beta=2):
         # Parameter to control impact of pheromones on path decision making
         self.alpha = alpha
 
@@ -112,13 +112,13 @@ class Ant:
         result = decoder.decode(self.path)
         return result["makespan"]
 
-    def deposit_pheromones(self, map_instance, decoder):
+    def deposit_pheromones(self, map_instance, decoder, weight=1.0):
         """"
         Deposit pheromones on the path visited
         """
         makespan = self.calculate_makespan(decoder)
 
-        pheromones_to_deposit = self.Q / makespan
+        pheromones_to_deposit = self.Q * weight / makespan
 
         # Deposit pheromones based on makespan
         for i in range(len(self.path) - 1):

@@ -18,7 +18,7 @@ class Map:
         self.pheromone_matrix = np.full((n_ops, n_ops), 0.01)
 
         # Controls how quickly pheromone trails evaporate
-        self.pheromone_evaporation_coefficient = 0.6
+        self.pheromone_evaporation_coefficient = 0.8
 
         # Matrix to store desirability of transition from node x to node y
         # desirability_matrix[1, 2] = 0.4 means the desirability to go from node 1 to node 2 is 0.4
@@ -39,14 +39,18 @@ class Map:
         """
         self.pheromone_matrix *= self.pheromone_evaporation_coefficient
 
-    def pheromone_update(self, decoder):
+    def pheromone_update(self, decoder, best_ant, global_best_ant=None):
         """
         Decays and updates pheromones trails
         """
         self.pheromone_decay()
-        # Create new pheromones
-        for ant in self.ants:
-            ant.deposit_pheromones(self, decoder)
+        # Create new pheromones from best ant
+
+        best_ant.deposit_pheromones(self, decoder, weight=2)
+
+        # Deposit from global best ant
+        if global_best_ant is not None:
+            global_best_ant.deposit_pheromones(self, decoder, weight=6)
 
     def construct_solutions(self):
         """
@@ -70,7 +74,7 @@ class Map:
 
         return best_path, best_makespan
 
-    def step(self, decoder):
+    def step(self, decoder, global_best_ant=None):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
@@ -84,32 +88,43 @@ class Map:
         self.construct_solutions()
 
         # Keep the best path found
-        best_path, best_makespan = self.find_best_path(decoder)
+        # best_path, best_makespan = self.find_best_path(decoder)
 
-        # Update pheromones
-        self.pheromone_update(decoder)
+        # Find best ant of this cycle
+        best_ant = min(
+            self.ants, key=lambda ant: ant.calculate_makespan(decoder))
+        best_path = best_ant.path.copy()
+        best_makespan = best_ant.calculate_makespan(decoder)
+
+        # Update pheromones using both best this cycle and global best
+        self.pheromone_update(decoder, best_ant, global_best_ant)
 
         # Reset position of ants
         for ant in self.ants:
             ant.reset()
 
-        return best_path, best_makespan
+        return best_path, best_makespan, best_ant
 
     def main(self, decoder, max_cycles=1000, verbose=True):
 
         global_best_path = None
         global_best_makespan = float("inf")
+        global_best_ant = None
+
         for i in range(max_cycles):
-            cycle_best_path, cycle_best_makespan = self.step(decoder)
+            cycle_best_path, cycle_best_makespan, cycle_best_ant = self.step(
+                decoder, global_best_ant)
 
             if cycle_best_makespan < global_best_makespan:
                 global_best_makespan = cycle_best_makespan
                 global_best_path = cycle_best_path
+                global_best_ant = cycle_best_ant
                 if verbose:
                     print(f"New best path of makespan {
                           global_best_makespan} found at cycle {i + 1}.")
 
-        print(f"Best found path is {
-              global_best_path} with a makespan of {global_best_makespan}.")
+        if verbose:
+            print(f"Best found path is {
+                  global_best_path} with a makespan of {global_best_makespan}.")
 
         return global_best_path, global_best_makespan

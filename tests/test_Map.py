@@ -61,7 +61,7 @@ def test_step():
 
 
 def test_main():
-    ants = [Ant() for i in range(len(operations))]
+    ants = [Ant() for i in range(16)]
 
     map_instance = Map(operations, ants)
 
