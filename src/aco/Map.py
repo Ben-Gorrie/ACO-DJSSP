@@ -15,7 +15,7 @@ class Map:
 
         # Matrix to store pheromone levels between nodes
         # pheromone_matrix[1, 2] = 0.7 means the amount of pheromone deposited between node 1 and 2 is 0.7
-        self.pheromone_matrix = np.full((n_ops, n_ops), 0.01)
+        self.pheromone_matrix = np.full((n_ops, n_ops), 1.0)
 
         # Controls how quickly pheromone trails evaporate
         self.pheromone_evaporation_coefficient = 0.8
@@ -46,11 +46,11 @@ class Map:
         self.pheromone_decay()
         # Create new pheromones from best ant
 
-        best_ant.deposit_pheromones(self, decoder, weight=2)
+        best_ant.deposit_pheromones(self, decoder, weight=1)
 
         # Deposit from global best ant
         if global_best_ant is not None:
-            global_best_ant.deposit_pheromones(self, decoder, weight=6)
+            global_best_ant.deposit_pheromones(self, decoder, weight=2)
 
     def construct_solutions(self):
         """
@@ -62,17 +62,19 @@ class Map:
     def find_best_path(self, decoder):
         """
         Finds the best path found by an ant.
-        Returns the path and its associated makespan
+        Returns the path and its associated makespan and ant
         """
         best_path = None
         best_makespan = float("inf")
+        best_ant = None
         for ant in self.ants:
             makespan = ant.calculate_makespan(decoder)
             if makespan < best_makespan:
                 best_makespan = makespan
                 best_path = ant.path.copy()
+                best_ant = ant
 
-        return best_path, best_makespan
+        return best_path, best_makespan, best_ant
 
     def step(self, decoder, global_best_ant=None):
         """
@@ -88,13 +90,13 @@ class Map:
         self.construct_solutions()
 
         # Keep the best path found
-        # best_path, best_makespan = self.find_best_path(decoder)
+        best_path, best_makespan, best_ant = self.find_best_path(decoder)
 
         # Find best ant of this cycle
-        best_ant = min(
-            self.ants, key=lambda ant: ant.calculate_makespan(decoder))
-        best_path = best_ant.path.copy()
-        best_makespan = best_ant.calculate_makespan(decoder)
+        # best_ant = min(
+        #     self.ants, key=lambda ant: ant.calculate_makespan(decoder))
+        # best_path = best_ant.path.copy()
+        # best_makespan = best_ant.calculate_makespan(decoder)
 
         # Update pheromones using both best this cycle and global best
         self.pheromone_update(decoder, best_ant, global_best_ant)
