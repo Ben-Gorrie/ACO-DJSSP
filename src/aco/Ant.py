@@ -112,13 +112,13 @@ class Ant:
         result = decoder.decode(self.path)
         return result["makespan"]
 
-    def deposit_pheromones(self, map_instance, decoder, weight=1.0):
+    def deposit_pheromones(self, map_instance, decoder):
         """"
         Deposit pheromones on the path visited
         """
         makespan = self.calculate_makespan(decoder)
 
-        pheromones_to_deposit = self.Q * weight / makespan
+        pheromones_to_deposit = 1 / makespan
 
         # Deposit pheromones based on makespan
         for i in range(len(self.path) - 1):

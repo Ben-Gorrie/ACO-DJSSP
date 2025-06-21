@@ -61,12 +61,13 @@ def test_step():
 
 
 def test_main():
-    ants = [Ant() for i in range(16)]
+    ants = [Ant() for i in range(2)]
 
     map_instance = Map(operations, ants)
 
     # Compute the best schedule
-    best_path, best_makespan = map_instance.main(scheduledecoder)
+    best_path, best_makespan = map_instance.main(
+        scheduledecoder, max_cycles=100)
 
     # For this simple example, the best makespan is known to be 8
     assert best_makespan == 8
