@@ -1,6 +1,8 @@
-from aco import Map, Ant, ScheduleDecoder, generate_operations_from_jobs
+from aco import Map, Ant, ScheduleDecoder, generate_operations_from_jobs, load_instance_with_optimum
 import math
 import numpy as np
+from pathlib import Path
+
 
 jobs = [
     [(0, 5), (1, 3)],  # Job 0
@@ -60,7 +62,7 @@ def test_step():
     assert np.sum(old_pheromones - new_pheromones) != 0
 
 
-def test_main():
+def test_small():
     ants = [Ant() for i in range(2)]
 
     map_instance = Map(operations, ants)
@@ -71,3 +73,15 @@ def test_main():
 
     # For this simple example, the best makespan is known to be 8
     assert best_makespan == 8
+
+
+def test_taillard():
+    optimal_makespan, operations = load_instance_with_optimum(
+        Path("/home/ben/Documents/Imperial_content/Assignments/JSPLIB"), "ft06")
+
+    ants = [Ant() for i in range(len(operations))]
+    scheduledecoder = ScheduleDecoder(operations)
+    map_instance = Map(operations, ants)
+    best_path, best_makespan = map_instance.main(scheduledecoder)
+
+    assert best_makespan == optimal_makespan
