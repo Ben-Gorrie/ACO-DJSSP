@@ -69,7 +69,7 @@ def test_small():
 
     # Compute the best schedule
     best_path, best_makespan = map_instance.main(
-        scheduledecoder, max_cycles=100)
+        scheduledecoder, max_cycles=100, verbose=False)
 
     # For this simple example, the best makespan is known to be 8
     assert best_makespan == 8

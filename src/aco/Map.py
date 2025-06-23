@@ -24,7 +24,7 @@ class Map:
             (self.n_ops, self.n_ops), self.tau_max + 1.5)
 
         # Controls how quickly pheromone trails evaporate
-        self.pheromone_evaporation_coefficient = 0.8
+        self.pheromone_evaporation_coefficient = 0.6
 
         # Matrix to store desirability of transition from node x to node y
         # desirability_matrix[1, 2] = 0.4 means the desirability to go from node 1 to node 2 is 0.4
@@ -106,6 +106,15 @@ class Map:
             self.pheromone_matrix[current_op,
                                   next_op] += pheromones_to_deposit
 
+    def pheromone_trail_smoothing(self, pts_delta=0.5):
+        """
+        Smooth the pheromone trails by pulling them slightly toward tau_max
+        to promote exploration.
+        """
+
+        self.pheromone_matrix += pts_delta * \
+            (self.tau_max - self.pheromone_matrix)
+
     def construct_solutions(self):
         """
         Find a complete schedule for each ant.
@@ -121,10 +130,11 @@ class Map:
         best_path = None
         best_makespan = float("inf")
         for ant in self.ants:
-            makespan = ant.calculate_makespan(decoder)
+            ant_path = ant.path
+            makespan = self.calculate_makespan(decoder, ant_path)
             if makespan < best_makespan:
                 best_makespan = makespan
-                best_path = ant.path.copy()
+                best_path = ant_path.copy()
 
         return best_path, best_makespan
 
@@ -169,6 +179,15 @@ class Map:
                 if verbose:
                     print(f"New best path of makespan {
                           self.global_best_makespan} found at cycle {i + 1}.")
+
+            # PTS
+            if i % 20 == 0:
+                self.pheromone_trail_smoothing()
+
+            # Reset pheromone trails after 300 iterations
+            if (i % 100 == 0 and i != 0):
+                print("Fully resetting pheromones")
+                self.pheromone_trail_smoothing(1)
 
         if verbose:
             print(f"Best found path is {

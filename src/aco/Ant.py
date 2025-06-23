@@ -104,26 +104,3 @@ class Ant:
             eligible = self.get_eligible_operations(all_ops)
             op = self.choose_operation(map_instance, eligible)
             self.path.append(op)
-
-    def calculate_makespan(self, decoder):
-        """
-        Use the decoder to get the makespan of the ant schedule.
-        """
-        result = decoder.decode(self.path)
-        return result["makespan"]
-
-    def deposit_pheromones(self, map_instance, decoder):
-        """"
-        Deposit pheromones on the path visited
-        """
-        makespan = self.calculate_makespan(decoder)
-
-        pheromones_to_deposit = 1 / makespan
-
-        # Deposit pheromones based on makespan
-        for i in range(len(self.path) - 1):
-            current_op = self.path[i].index
-            next_op = self.path[i + 1].index
-
-            map_instance.pheromone_matrix[current_op,
-                                          next_op] += pheromones_to_deposit
