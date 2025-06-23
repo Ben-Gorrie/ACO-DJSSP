@@ -1,5 +1,5 @@
 import numpy as np
-
+from .misc import apply_local_search
 
 class Map:
     """
@@ -138,7 +138,7 @@ class Map:
 
         return best_path, best_makespan
 
-    def step(self, decoder, use_global_best_path=False):
+    def step(self, decoder, use_global_best_path=False, local_search=True):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
@@ -150,6 +150,11 @@ class Map:
 
         # Update the best path found this step
         best_path, best_makespan = self.find_best_path(decoder)
+
+        # Use local search if enabled
+        if local_search:
+            best_path, best_makespan = apply_local_search(best_path, decoder)
+
         self.cycle_best_path = best_path
         self.cycle_best_makespan = best_makespan
 
@@ -163,9 +168,9 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, max_cycles=1000, verbose=True):
+    def main(self, decoder, max_cycles=1000, verbose=True, local_search=True):
         for i in range(max_cycles):
-            self.step(decoder)
+            self.step(decoder, local_search=local_search)
 
             # If new global best solution found
             if self.cycle_best_makespan < self.global_best_makespan:

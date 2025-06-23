@@ -1,7 +1,8 @@
-from aco import Operation
+from .Operation import Operation
 from pathlib import Path
 import json
 from collections import defaultdict
+from copy import deepcopy
 
 
 def generate_operations_from_jobs(jobs):
@@ -106,7 +107,7 @@ def find_critical_path(op_sequence, decoder):
     # Recursively find longest path ending at end_op
     memo = {}
     backtrack = {}
-    _dfs_critical_path(end_op, reverse_adj, start_times, end_times, memo, backtrack)
+    _dfs_critical_path(end_op, reverse_adj, start_times, end_times, memo, backtrack, visited=set())
 
     return _reconstruct_path(end_op, backtrack)
 
@@ -157,9 +158,10 @@ def _build_reverse_adjacency(adjacency):
 
     return reverse_adjacency
 
-def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, backtrack):
+def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, backtrack, visited=None):
     """
     Recursively find the longest path ending at 'current_op', and remember the best predecessor.
+    Includes cycle detection using a set.
 
     Args:
         current_op: Operation index currently looking at
@@ -170,24 +172,29 @@ def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, ba
     Returns:
         Length of the longest path ending at current_op
     """
+    if visited is None:
+        visited = set()
+
+    if current_op in visited:
+        raise ValueError(f"Cycle detected at operation {current_op}. Check if op_sequence violates precedence constraints.")
+
     if current_op in memo:
         return memo[current_op]
+
+    visited.add(current_op)
 
     max_length = 0
     best_pred = None
 
     for prev_op in reverse_adj[current_op]:
-        # Recurse to compute path length from predecessor
-        path_length = _dfs_critical_path(prev_op, reverse_adj, start_times, end_times, memo, backtrack)
-
-        # Add duration of the predecessor operation
+        path_length = _dfs_critical_path(prev_op, reverse_adj, start_times, end_times, memo, backtrack, visited)
         path_length += end_times[prev_op] - start_times[prev_op]
 
         if path_length > max_length:
             max_length = path_length
             best_pred = prev_op
 
-    # Remember result
+    visited.remove(current_op)
     memo[current_op] = max_length
     if best_pred is not None:
         backtrack[current_op] = best_pred
@@ -203,6 +210,75 @@ def _reconstruct_path(end_op, backtrack):
         path.append(backtrack[path[-1]])
     path.reverse()
     return path
+
+def apply_local_search(op_sequence, decoder):
+    """
+    Apply swap-based local search on critical blocks in the given op_sequence.
+    Returns the improved op_sequence (or original if no improvement found).
+    """
+    best_sequence = deepcopy(op_sequence)
+    best_schedule = decoder.decode(best_sequence)
+    best_makespan = best_schedule["makespan"]
+
+    # Find critical path
+    critical_path = find_critical_path(best_sequence, decoder)
+
+    # Group critical ops by machine
+    index_to_op = {op.index: op for op in best_sequence}
+    machine_blocks = defaultdict(list)
+
+    for idx in critical_path:
+        op = index_to_op[idx]
+        machine_blocks[op.machine_id].append(op)
+
+    #  For each block, try swapping adjacent operations
+    for machine_id, ops in machine_blocks.items():
+        # Sort operations by start time on that machine
+        ops.sort(key=lambda op: best_schedule["start_times"][op.index])
+
+        for i in range(len(ops) - 1):
+            op1, op2 = ops[i], ops[i + 1]
+
+            # Attempt to swap them in the op_sequencec
+            swapped_sequence = deepcopy(best_sequence)
+
+            # Use op.index to find them in swapped_sequence
+            op_id_to_pos = {op.index: i for i, op in enumerate(swapped_sequence)}
+
+            i1 = op_id_to_pos[op1.index]
+            i2 = op_id_to_pos[op2.index]
+            swapped_sequence[i1], swapped_sequence[i2] = swapped_sequence[i2], swapped_sequence[i1]
+
+            # Feasibility check
+            if not is_feasible_sequence(swapped_sequence):
+                continue
+
+            # Decode and check new makespan
+            new_schedule = decoder.decode(swapped_sequence)
+            new_makespan = new_schedule["makespan"]
+
+            if new_makespan < best_makespan:
+                best_sequence = swapped_sequence
+                best_makespan = new_makespan
+
+    return best_sequence, best_makespan
+
+
+def is_feasible_sequence(op_sequence):
+    """
+    Checks that operations of each job occur in the correct order.
+    """
+    job_positions = defaultdict(list)
+
+    for pos, op in enumerate(op_sequence):
+        job_positions[op.job_id].append((op.operation_id, pos))
+
+    for job_id, ops in job_positions.items():
+        ops.sort(key=lambda x: x[0])  # sort by operation_id
+        positions = [pos for _, pos in ops]
+        if positions != sorted(positions):
+            return False  # operation order is violated
+    return True
 
 
 

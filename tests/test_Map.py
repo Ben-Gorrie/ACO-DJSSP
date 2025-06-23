@@ -82,9 +82,6 @@ def test_taillard():
     ants = [Ant() for i in range(len(operations))]
     scheduledecoder = ScheduleDecoder(operations)
     map_instance = Map(operations, ants)
-    best_path, best_makespan = map_instance.main(scheduledecoder)
-
-    print("Critial path")
-    print(find_critical_path(best_path, scheduledecoder))
+    best_path, best_makespan = map_instance.main(scheduledecoder, local_search=True)
 
     assert best_makespan == optimal_makespan

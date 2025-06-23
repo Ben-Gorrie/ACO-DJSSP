@@ -1,3 +1,6 @@
+from .misc import is_feasible_sequence
+
+
 class ScheduleDecoder:
     def __init__(self, operations):
         self.operations = operations
@@ -15,6 +18,10 @@ class ScheduleDecoder:
                 - "end_times": {op.index: end_time}
                 - "makespan": max end time across all operations
         """
+        # Feasibility check
+        if not is_feasible_sequence(op_sequence):
+            raise ValueError("Invalid op_sequence: job precedence violated")
+        
         # Track when each machine and each job is next available
         machine_available_time = dict()
         job_latest_end_time = dict()
