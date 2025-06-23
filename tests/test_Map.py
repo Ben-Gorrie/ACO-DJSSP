@@ -1,4 +1,4 @@
-from aco import Map, Ant, ScheduleDecoder, generate_operations_from_jobs, load_instance_with_optimum
+from aco import Map, Ant, ScheduleDecoder, generate_operations_from_jobs, load_instance_with_optimum, find_critical_path
 import math
 import numpy as np
 from pathlib import Path
@@ -83,5 +83,8 @@ def test_taillard():
     scheduledecoder = ScheduleDecoder(operations)
     map_instance = Map(operations, ants)
     best_path, best_makespan = map_instance.main(scheduledecoder)
+
+    print("Critial path")
+    print(find_critical_path(best_path, scheduledecoder))
 
     assert best_makespan == optimal_makespan
