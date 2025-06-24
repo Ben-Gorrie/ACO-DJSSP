@@ -151,6 +151,13 @@ class Map:
                 best_path = ant_path.copy()
 
         return best_path, best_makespan
+    
+    def penalize_path(self, path, penalty=0.1):
+        for i in range(len(path) - 1):
+            a = path[i].index
+            b = path[i + 1].index
+            self.pheromone_matrix[a][b] *= penalty
+
 
     def step(self, decoder, use_global_best_path=False, local_search=True):
         """
@@ -159,18 +166,19 @@ class Map:
         updating the pheromones, bounding them and resetting ants to the start.
         Keeps track of the best path this cycle.
         """
-        # Find possible paths
-        self.construct_solutions()
+        if not use_global_best_path:
+            # Find possible paths
+            self.construct_solutions()
 
-        # Update the best path found this step
-        best_path, best_makespan = self.find_best_path(decoder)
+            # Update the best path found this step
+            best_path, best_makespan = self.find_best_path(decoder)
 
-        # Use local search if enabled
-        if local_search:
-            best_path, best_makespan = apply_local_search(best_path, decoder)
+            # Use local search if enabled
+            if local_search:
+                best_path, best_makespan = apply_local_search(best_path, decoder)
 
-        self.cycle_best_path = best_path
-        self.cycle_best_makespan = best_makespan
+            self.cycle_best_path = best_path
+            self.cycle_best_makespan = best_makespan
 
         # Update pheromones
         self.pheromone_update(use_global_best_path)
@@ -184,6 +192,7 @@ class Map:
 
     def main(self, decoder, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
+        soft_static_iterations = max_static_iterations * 0.5
         n_static_iterations = 0
         for i in range(max_cycles):
             self.step(decoder, local_search=local_search)
@@ -205,8 +214,13 @@ class Map:
                           self.global_best_makespan} found at cycle {i + 1}.")
 
             # PTS
-            if i % 20 == 0:
+            if (i % 20 == 0 and i != 0):
                 self.pheromone_trail_smoothing()
+
+            # if n_static_iterations == soft_static_iterations:
+            #     if verbose:
+            #         print("Penalising best path")
+            #     self.penalize_path(self.global_best_path)
 
             # Reset pheromone trails
             if n_static_iterations == max_static_iterations:
