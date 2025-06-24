@@ -21,7 +21,7 @@ class ScheduleDecoder:
         # Feasibility check
         if not is_feasible_sequence(op_sequence):
             raise ValueError("Invalid op_sequence: job precedence violated")
-        
+
         # Track when each machine and each job is next available
         machine_available_time = dict()
         job_latest_end_time = dict()
