@@ -52,3 +52,16 @@
     - Implement Ant Elitism.
     - Make JSSP solving more robust.
     - Start thinking about how to implement a dynamic DJSSP, depending on how good the static variant performs.
+
+## 24/06/2025
+- **Present**: Benjamin Gorrie, Marijan Beg
+- **Key points discussed**
+    - Showed Marijan MMAS JSSP solver. Marijan happy with state of things.
+    - I raised my concerns regarding the solution space for JSSP not being smooth unlike in the TSP, meaning ants need to explore more. Marijan does not see this as a huge issue as the focus of the project is (hopefully) the ability for the ants to quickly react to a dynamic change.
+    - Monte Carlo swapping was suggested to come up with an initial schedule in case ants end up being too slow.
+    - Marijan also bought up starting to work on my final report, maybe like 500 words a week to avoid having to cram it all at the end.
+- **Feedback received**
+    - Current implementation is close to "good enough", start working on dynamic system.
+- **Plan before next meeting**
+    - Start working on a DJSSP solver using the MMAS code.
+    - Start working on the final project latex files.
