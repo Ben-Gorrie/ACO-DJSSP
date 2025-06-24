@@ -182,7 +182,9 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, max_cycles=1000, verbose=True, local_search=True):
+    def main(self, decoder, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
+        max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
+        n_static_iterations = 0
         for i in range(max_cycles):
             self.step(decoder, local_search=local_search)
 
@@ -195,6 +197,9 @@ class Map:
                 # Update pheromone bounds
                 self.calculate_new_pheromone_bounds()
 
+                # Reset nothing changed counter
+                n_static_iterations = 0
+
                 if verbose:
                     print(f"New best path of makespan {
                           self.global_best_makespan} found at cycle {i + 1}.")
@@ -203,10 +208,14 @@ class Map:
             if i % 20 == 0:
                 self.pheromone_trail_smoothing()
 
-            # Reset pheromone trails after 300 iterations
-            if (i % 100 == 0 and i != 0):
-                print("Fully resetting pheromones")
+            # Reset pheromone trails
+            if n_static_iterations == max_static_iterations:
+                if verbose:
+                    print("Fully resetting pheromones")
                 self.pheromone_trail_smoothing(1)
+                n_static_iterations = 0
+            
+            n_static_iterations += 1
 
         if verbose:
             print(f"Best found path is {
