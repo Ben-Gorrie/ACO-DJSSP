@@ -1,4 +1,5 @@
 import numpy as np
+from collections import defaultdict
 from .misc import apply_local_search
 
 class Map:
@@ -26,14 +27,27 @@ class Map:
         # Controls how quickly pheromone trails evaporate
         self.pheromone_evaporation_coefficient = 0.6
 
+        # Count how many operations each job contains
+        job_op_counts = defaultdict(int)
+        for op in self.operations:
+            job_op_counts[op.job_id] += 1
+
         # Matrix to store desirability of transition from node x to node y
         # desirability_matrix[1, 2] = 0.4 means the desirability to go from node 1 to node 2 is 0.4
+        # Fill in desirability matrix using a weighted combination of:
+        # - processing time (shorter is better)
+        # - number of remaining operations in the job (fewer is better)
         self.desirability_matrix = np.zeros((self.n_ops, self.n_ops))
         for i in range(self.n_ops):
             for j in range(self.n_ops):
+                to_op = self.operations[j]
                 proc_time = self.operations[j].processing_time
+
+                total_ops_in_job = job_op_counts[to_op.job_id]
+                remaining_ops = total_ops_in_job - to_op.operation_id
+
                 # Prevent division by zero
-                self.desirability_matrix[i][j] = 1.0 / proc_time
+                self.desirability_matrix[i][j] = 1.0 / (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
 
         # List of ant objects
         self.ants = ants
