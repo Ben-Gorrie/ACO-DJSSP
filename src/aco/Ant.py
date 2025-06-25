@@ -3,102 +3,104 @@ from random import choices
 
 
 class Ant:
-    def __init__(self):
+    def __init__(self, alpha=2, beta=2):
         # Parameter to control impact of pheromones on path decision making
-        self.alpha = 1
+        self.alpha = alpha
 
         # Parameter to control impact of desirability on path decision making
-        # In the case of the TSP, desirability is distance (shorter is better)
-        self.beta = 6
+        self.beta = beta
 
         # Param to control how much pheromone ants leave when retracing path
         self.Q = 1
 
         # Path the ant has taken so far
-        # If this were [0, 3], it started at node 0 and went to node 3
-        # Nodes are ordered in the same way as they are ordered in Map
-        # Note that this path must end up closed
+        # Sequence of scheduled operations
         self.path = []
 
-    def move_probabilities(self, map_instance):
+    def get_eligible_operations(self, all_operations):
+        """
+        Returns operations whose job-predecessors have already been scheduled.
+        If an operation is the first in a job, it is automatically eligible
+        (unless it has already been scheduled)
+        """
+        eligible = []
+        scheduled_indices = {op.index for op in self.path}
+
+        for op in all_operations:
+            # Skip all already scheduled operations
+            if op.index in scheduled_indices:
+                continue
+
+            # If the operation starts a new job, it is eligible
+            if op.operation_id == 0:
+                eligible.append(op)
+            else:
+                # Find the previous operation in the same job
+                prev_op = next(
+                    (o for o in all_operations
+                     if o.job_id == op.job_id and o.operation_id == op.operation_id - 1),
+                    None
+                )
+
+                if prev_op and prev_op.index in scheduled_indices:
+                    eligible.append(op)
+
+        return eligible
+
+    def move_probabilities(self, map_instance, eligible_ops):
         """
         Returns the probabilities of an ant going from its current state
         to each other node it has not yet visited
         """
-        # Get all remaining nodes
-        all_nodes = [i for i in range(len(map_instance.nodes))]
-        nodes_remaining = list(set(all_nodes) - set(self.path))
-
-        current_position = self.path[-1]
+        from_op = self.path[-1] if self.path else None
 
         # Compute probabilities of ant moving to remaining nodes
-        numerators = np.array([(map_instance.pheromone_matrix[current_position, y]**self.alpha)
-                               * (map_instance.desirability_matrix[current_position, y]**self.beta) for y in nodes_remaining])
+        numerators = []
+        for to_op in eligible_ops:
+            i = from_op.index if from_op else None
+            j = to_op.index
+
+            # Default values if no previous operation (first move)
+            pheromones = map_instance.pheromone_matrix[i][j] if from_op else 1
+            desirability = map_instance.desirability_matrix[i][j] if from_op else 1
+
+            numerators.append((pheromones ** self.alpha) *
+                              (desirability ** self.beta))
+
+        numerators = np.array(numerators)
         denominator = np.sum(numerators)
 
         if denominator == 0 or not np.isfinite(denominator):
             # Uniform distribution fallback
             # Necessary to prevent crashing when iterating for too long and some paths fade
             probabilities = np.ones(
-                len(nodes_remaining)) / len(nodes_remaining)
+                len(eligible_ops)) / len(eligible_ops)
         else:
             probabilities = numerators / denominator
 
-        return probabilities, nodes_remaining
+        return probabilities
 
-    def choose_node(self, map_instance):
+    def choose_operation(self, map_instance, eligible_ops):
         """
-        Choose next node given the possible remaining nodes and probabilities
+        Choose next operation to schedule given the possible remaining operations
         """
-        # Choose a node from the choices available
-        probabilities, nodes_remaining = self.move_probabilities(map_instance)
-        assert len(probabilities) == len(nodes_remaining)
-        return choices(nodes_remaining, weights=probabilities)[0]
+        # Choose an operation from the choices available
+        probabilities = self.move_probabilities(map_instance, eligible_ops)
+        return choices(eligible_ops, weights=probabilities)[0]
 
-    def calculate_tour_length(self, map_instance):
+    def reset(self):
         """
-        Compute length of total tour. Should only be called at end of tour.
+        Reset the position of the ant
         """
-        total_length = 0
+        self.path = []
 
-        for i in range(len(self.path) - 1):
-            leg1 = self.path[i]
-            leg2 = self.path[i + 1]
-            total_length += map_instance.distance_matrix[leg1, leg2]
-
-        return total_length
-
-    def deposit_pheromones(self, map_instance):
-        """"
-        Deposit pheromones on the path visited
+    def construct_schedule(self, map_instance):
         """
-        # Reverse the path. Not needed for symmetric problems
-        path_back = self.path[::-1]
-
-        tour_length = self.calculate_tour_length(map_instance)
-
-        pheromones_to_deposit = self.Q / tour_length
-
-        # As the path loops, -1 here to avoid out of bounds
-        for i in range(len(path_back) - 1):
-            current_node = path_back[i]
-            next_node = path_back[i + 1]
-            map_instance.pheromone_matrix[next_node,
-                                          current_node] += pheromones_to_deposit
-            # Make symmetric here, but does not have to be the case
-            map_instance.pheromone_matrix[current_node,
-                                          next_node] += pheromones_to_deposit
-
-    def reset_position(self):
+        Build a full schedule in valid order
         """
-        Reset the ant to its starting position.
-        As ants are uniformly distributed, each ant has a different "start"
-        """
-        self.path = self.path[0:1]
-
-    def move(self, map_instance):
-        """
-        Move the ant from its current node to the next
-        """
-        next_node = self.choose_node(map_instance)
-        self.path.append(next_node)
+        self.reset()
+        all_ops = map_instance.operations
+        while len(self.path) < len(all_ops):
+            eligible = self.get_eligible_operations(all_ops)
+            op = self.choose_operation(map_instance, eligible)
+            self.path.append(op)
