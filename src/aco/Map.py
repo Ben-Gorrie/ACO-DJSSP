@@ -2,6 +2,7 @@ import numpy as np
 from collections import defaultdict
 from .misc import apply_local_search
 
+
 class Map:
     """
     Class to keep track of the map, keeping track of nodes, pheromones, ants and best values
@@ -47,7 +48,8 @@ class Map:
                 remaining_ops = total_ops_in_job - to_op.operation_id
 
                 # Prevent division by zero
-                self.desirability_matrix[i][j] = 1.0 / (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
+                self.desirability_matrix[i][j] = 1.0 / \
+                    (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
 
         # List of ant objects
         self.ants = ants
@@ -68,6 +70,10 @@ class Map:
         return result["makespan"]
 
     def calculate_new_pheromone_bounds(self):
+        """
+        Calculate the new max and min pheromone bounds.
+        This should only be run when a new best path is found.
+        """
         # Find maximum allowed pheromone trail
         self.tau_max = 1 / \
             ((1 - self.pheromone_evaporation_coefficient) * self.global_best_makespan)
@@ -125,7 +131,6 @@ class Map:
         Smooth the pheromone trails by pulling them slightly toward tau_max
         to promote exploration.
         """
-
         self.pheromone_matrix += pts_delta * \
             (self.tau_max - self.pheromone_matrix)
 
@@ -151,13 +156,16 @@ class Map:
                 best_path = ant_path.copy()
 
         return best_path, best_makespan
-    
+
     def penalize_path(self, path, penalty=0.1):
+        """
+        Penalize the chosen path.
+        Hopefully can be used to discourage ants going down the same path?
+        """
         for i in range(len(path) - 1):
             a = path[i].index
             b = path[i + 1].index
             self.pheromone_matrix[a][b] *= penalty
-
 
     def step(self, decoder, use_global_best_path=False, local_search=True):
         """
@@ -175,7 +183,8 @@ class Map:
 
             # Use local search if enabled
             if local_search:
-                best_path, best_makespan = apply_local_search(best_path, decoder)
+                best_path, best_makespan = apply_local_search(
+                    best_path, decoder)
 
             self.cycle_best_path = best_path
             self.cycle_best_makespan = best_makespan
@@ -191,10 +200,16 @@ class Map:
             ant.reset()
 
     def main(self, decoder, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
+        # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
-        soft_static_iterations = max_static_iterations * 0.5
+
+        # soft_static_iterations = max_static_iterations * 0.5
+
+        # Keep track of number of iterations where the global best solution does not change
         n_static_iterations = 0
+
         for i in range(max_cycles):
+            # Perform a cycle
             self.step(decoder, local_search=local_search)
 
             # If new global best solution found
@@ -228,7 +243,7 @@ class Map:
                     print("Fully resetting pheromones")
                 self.pheromone_trail_smoothing(1)
                 n_static_iterations = 0
-            
+
             n_static_iterations += 1
 
         if verbose:

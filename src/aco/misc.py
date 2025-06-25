@@ -7,14 +7,14 @@ from copy import deepcopy
 
 def generate_operations_from_jobs(jobs):
     """
-    Converts job list to flat list of Operation objects.
+    Converts job list to flat list of Operation objects
 
     Parameters:
         jobs: list of jobs
-              Each job is a list of (machine_id, processing_time) tuples.
+              Each job is a list of (machine_id, processing_time) tuples
 
     Returns:
-        List of Operation objects with unique indices.
+        List of Operation objects with unique indices
     """
     operations = []
     op_index = 0
@@ -34,13 +34,13 @@ def generate_operations_from_jobs(jobs):
 
 def parse_taillard_to_operations(path):
     """
-    Parses a Taillard-format JSSP instance file and returns a flat list of Operation objects.
+    Parses a Taillard-format JSSP instance file and returns a flat list of Operation objects
 
     Parameters:
-        path (str or Path): Path to the Taillard-format instance file.
+        path (str or Path): Path to the Taillard-format instance file
 
     Returns:
-        List[Operation]: Flat list of Operation objects.
+        List[Operation]: Flat list of Operation objects
     """
     path = Path(path)
     with open(path, "r") as f:
@@ -90,9 +90,10 @@ def load_instance_with_optimum(jsplib_path, instance_name):
 
     return optimum, parse_taillard_to_operations(instance_path)
 
+
 def find_critical_path(op_sequence, decoder):
     """
-    Find the critical path (longest path) through a scheduled list of operations.
+    Find the critical path (longest path) through a scheduled list of operations
     """
     schedule = decoder.decode(op_sequence)
     start_times = schedule["start_times"]
@@ -107,14 +108,16 @@ def find_critical_path(op_sequence, decoder):
     # Recursively find longest path ending at end_op
     memo = {}
     backtrack = {}
-    _dfs_critical_path(end_op, reverse_adj, start_times, end_times, memo, backtrack, visited=set())
+    _dfs_critical_path(end_op, reverse_adj, start_times,
+                       end_times, memo, backtrack, visited=set())
 
     return _reconstruct_path(end_op, backtrack)
+
 
 def _build_adjacency_list(op_sequence, start_times):
     """
     Create a dictionary where each operation points to the operations that must come after it.
-    This includes job order (op1 before op2 in a job) and machine order (op1 scheduled before op2 on same machine).
+    This includes job order (op1 before op2 in a job) and machine order (op1 scheduled before op2 on same machine)
     """
     adjacency = {op.index: [] for op in op_sequence}
 
@@ -136,7 +139,8 @@ def _build_adjacency_list(op_sequence, start_times):
         machines[op.machine_id].append(op)
 
     for machine_id, ops in machines.items():
-        ops.sort(key=lambda op: start_times[op.index])  # Respect the actual schedule
+        # Respect the actual schedule
+        ops.sort(key=lambda op: start_times[op.index])
         for i in range(len(ops) - 1):
             before = ops[i]
             after = ops[i + 1]
@@ -144,11 +148,12 @@ def _build_adjacency_list(op_sequence, start_times):
 
     return adjacency
 
+
 def _build_reverse_adjacency(adjacency):
     """
     Create the reverse of the adjacency graph.
     If A -> B in the original, then B -> A in the reverse.
-    This helps us backtrack from the end of the schedule.
+    This helps backtrack from the end of the schedule.
     """
     reverse_adjacency = defaultdict(list)
 
@@ -157,6 +162,7 @@ def _build_reverse_adjacency(adjacency):
             reverse_adjacency[to_node].append(from_node)
 
     return reverse_adjacency
+
 
 def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, backtrack, visited=None):
     """
@@ -176,7 +182,8 @@ def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, ba
         visited = set()
 
     if current_op in visited:
-        raise ValueError(f"Cycle detected at operation {current_op}. Check if op_sequence violates precedence constraints.")
+        raise ValueError(f"Cycle detected at operation {
+                         current_op}. Check if op_sequence violates precedence constraints.")
 
     if current_op in memo:
         return memo[current_op]
@@ -187,7 +194,8 @@ def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, ba
     best_pred = None
 
     for prev_op in reverse_adj[current_op]:
-        path_length = _dfs_critical_path(prev_op, reverse_adj, start_times, end_times, memo, backtrack, visited)
+        path_length = _dfs_critical_path(
+            prev_op, reverse_adj, start_times, end_times, memo, backtrack, visited)
         path_length += end_times[prev_op] - start_times[prev_op]
 
         if path_length > max_length:
@@ -201,15 +209,17 @@ def _dfs_critical_path(current_op, reverse_adj, start_times, end_times, memo, ba
 
     return max_length
 
+
 def _reconstruct_path(end_op, backtrack):
     """
-    Reconstruct the critical path by following the backtrack map from end_op back to start.
+    Reconstruct the critical path by following the backtrack map from end_op back to start
     """
     path = [end_op]
     while path[-1] in backtrack:
         path.append(backtrack[path[-1]])
     path.reverse()
     return path
+
 
 def apply_local_search(op_sequence, decoder):
     """
@@ -243,7 +253,8 @@ def apply_local_search(op_sequence, decoder):
             swapped_sequence = deepcopy(best_sequence)
 
             # Use op.index to find them in swapped_sequence
-            op_id_to_pos = {op.index: i for i, op in enumerate(swapped_sequence)}
+            op_id_to_pos = {op.index: i for i,
+                            op in enumerate(swapped_sequence)}
 
             i1 = op_id_to_pos[op1.index]
             i2 = op_id_to_pos[op2.index]
@@ -266,7 +277,7 @@ def apply_local_search(op_sequence, decoder):
 
 def is_feasible_sequence(op_sequence):
     """
-    Checks that operations of each job occur in the correct order.
+    Checks that operations of each job occur in the correct order
     """
     job_positions = defaultdict(list)
 
@@ -279,6 +290,3 @@ def is_feasible_sequence(op_sequence):
         if positions != sorted(positions):
             return False  # operation order is violated
     return True
-
-
-
