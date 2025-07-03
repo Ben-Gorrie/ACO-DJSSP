@@ -62,6 +62,58 @@ class Map:
         self.global_best_makespan = float("inf")
         self.global_best_path = None
 
+        # Keep track of time
+        self.current_time = 0
+
+    def expand_pheromone_matrix(self, new_operations):
+        old_n = self.n_ops
+        new_n = len(new_operations)
+
+        # Create new pheromone matrix
+        new_pheromones = np.full(
+            (new_n, new_n), self.tau_max + 1.5)
+        # Copy old pheromone values over
+        new_pheromones[:old_n, :old_n] = self.pheromone_matrix
+        self.pheromone_matrix = new_pheromones
+
+    def expand_desirability_matrix(self, new_operations):
+        old_n = self.n_ops
+        new_n = len(new_operations)
+
+        # Count how many operations each job contains
+        job_op_counts = defaultdict(int)
+        for op in new_operations:
+            job_op_counts[op.job_id] += 1
+
+        # Create new desirability matrix
+        new_desirability_matrix = np.zeros((new_n, new_n))
+        # Copy over old values
+        new_desirability_matrix[:old_n, :old_n] = self.desirability_matrix
+        for i in range(new_n):
+            for j in range(old_n, new_n):
+                to_op = self.operations[j]
+                proc_time = self.operations[j].processing_time
+
+                total_ops_in_job = job_op_counts[to_op.job_id]
+                remaining_ops = total_ops_in_job - to_op.operation_id
+
+                # Prevent division by zero
+                new_desirability_matrix[i][j] = 1.0 / \
+                    (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
+
+        self.desirability_matrix = new_desirability_matrix
+
+    def expand_matrices(self, new_operations):
+        self.expand_pheromone_matrix(new_operations)
+        self.expand_desirability_matrix(new_operations)
+        self.n_ops = len(new_operations)
+
+    def add_operations(self, new_ops):
+        """
+        Append new operations to the operation list
+        """
+        self.operations.extend(new_ops)
+
     def calculate_makespan(self, decoder, path):
         """
         Use the decoder to get the makespan of the schedule.
@@ -139,7 +191,7 @@ class Map:
         Find a complete schedule for each ant.
         """
         for ant in self.ants:
-            ant.construct_schedule(self)
+            ant.construct_schedule(self, self.current_time)
 
     def find_best_path(self, decoder):
         """
@@ -199,7 +251,10 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
+        # Move time forwards
+        self.current_time += 1
+
+    def main(self, decoder, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
         # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
 
@@ -209,6 +264,27 @@ class Map:
         n_static_iterations = 0
 
         for i in range(max_cycles):
+
+            # Inject new jobs if any
+            if job_arrival_manager:
+                new_ops = job_arrival_manager.get_jobs_arriving_at(
+                    self.current_time)
+                if new_ops:
+                    # Reset global and cycle best paths
+                    self.cycle_best_makespan = float("inf")
+                    self.cycle_best_path = None
+
+                    self.global_best_makespan = float("inf")
+                    self.global_best_path = None
+
+                    if verbose:
+                        print(f"New operations detected at time {
+                              self.current_time}")
+                        print(f"New operations are {
+                              new_ops}. Adding them to operations.")
+                    self.add_operations(new_ops)
+                    self.expand_matrices(self.operations)
+
             # Perform a cycle
             self.step(decoder, local_search=local_search)
 

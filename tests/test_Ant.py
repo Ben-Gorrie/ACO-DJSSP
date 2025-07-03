@@ -17,7 +17,7 @@ map_instance = Map(operations, ants)
 def test_get_eligible_operations():
     my_ant = Ant()
 
-    eligible = my_ant.get_eligible_operations(operations)
+    eligible = my_ant.get_eligible_operations(operations, current_time=0)
 
     # Assert that the only eligible operations
     # at this initial stage are the ones that start a job
@@ -31,7 +31,8 @@ def test_get_eligible_operations():
     # Manually add the first operation to the schedule of the ant
     my_ant.path.append(operations[0])
 
-    eligible_updated = my_ant.get_eligible_operations(operations)
+    eligible_updated = my_ant.get_eligible_operations(
+        operations, current_time=0)
 
     # Assert that the new eligible operations are the one
     # following operation (0, 5) or the one starting a new job
@@ -42,7 +43,7 @@ def test_get_eligible_operations():
 def test_move_probabilities():
 
     my_ant = Ant()
-    eligible = my_ant.get_eligible_operations(operations)
+    eligible = my_ant.get_eligible_operations(operations, current_time=0)
     probabilities = my_ant.move_probabilities(map_instance, eligible)
 
     # Ensure probabilites add to 1
@@ -51,7 +52,8 @@ def test_move_probabilities():
     # Manually add the first operation to the schedule of the ant
     my_ant.path.append(operations[0])
 
-    eligible_updated = my_ant.get_eligible_operations(operations)
+    eligible_updated = my_ant.get_eligible_operations(
+        operations, current_time=0)
     probabilities_updated = my_ant.move_probabilities(
         map_instance, eligible_updated)
 
@@ -62,7 +64,7 @@ def test_move_probabilities():
 def test_choose_operation():
     my_ant = Ant()
 
-    eligible = my_ant.get_eligible_operations(operations)
+    eligible = my_ant.get_eligible_operations(operations, current_time=0)
     chosen_op = my_ant.choose_operation(map_instance, eligible)
 
     # Ensure chosen operation is not already in the ant's path
@@ -74,7 +76,7 @@ def test_choose_operation():
 
     # Manually add the first operation to the schedule of the ant
     my_ant.path.append(operations[0])
-    eligible = my_ant.get_eligible_operations(operations)
+    eligible = my_ant.get_eligible_operations(operations, current_time=0)
 
     # Increase probability the ant goes to operation 1 from operation 0
     map_instance.pheromone_matrix[0, 1] *= 2
@@ -101,7 +103,7 @@ def test_choose_operation():
 def test_construct_schedule():
     my_ant = Ant()
 
-    my_ant.construct_schedule(map_instance)
+    my_ant.construct_schedule(map_instance, current_time=0)
 
     # Ensure all operations are added to the schedule
     assert len(my_ant.path) == len(operations)

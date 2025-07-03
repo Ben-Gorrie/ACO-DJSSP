@@ -1,4 +1,4 @@
-from aco import Map, Ant, ScheduleDecoder, generate_operations_from_jobs, load_instance_with_optimum
+from aco import Map, Ant, Operation, ScheduleDecoder, JobArrivalManager, generate_operations_from_jobs, load_instance_with_optimum
 import math
 import numpy as np
 from pathlib import Path
@@ -77,11 +77,47 @@ def test_small():
 
 def test_taillard():
     optimal_makespan, operations = load_instance_with_optimum(
-        Path("/home/ben/Documents/Imperial_content/Assignments/JSPLIB"), "ft06")
+        Path("/home/bg721/JSPLIB/"), "ft06")
 
     ants = [Ant() for i in range(len(operations))]
     scheduledecoder = ScheduleDecoder(operations)
     map_instance = Map(operations, ants)
-    best_path, best_makespan = map_instance.main(scheduledecoder, local_search=True)
+    best_path, best_makespan = map_instance.main(
+        scheduledecoder, local_search=True)
 
     assert math.isclose(optimal_makespan, best_makespan, rel_tol=0.1)
+
+
+def test_dynamic():
+    optimal_makespan, operations = load_instance_with_optimum(
+        Path("/home/bg721/JSPLIB/"), "ft06")
+    ants = [Ant() for i in range(len(operations))]
+    scheduledecoder = ScheduleDecoder(operations)
+
+    jobs = [
+        [(0, 5), (1, 3)]
+    ]
+
+    ops_flat = generate_operations_from_jobs(jobs)
+
+    existing_job_ids = {op.job_id for op in operations}
+    new_job_id = max(existing_job_ids) + 1
+
+    for op in ops_flat:
+        op.job_id = new_job_id
+
+    max_index = operations[-1].index
+
+    for op in ops_flat:
+        op.index = max_index + 1
+        max_index += 1
+
+    job_arrival_schedule = {
+        10: ops_flat
+    }
+
+    jam = JobArrivalManager(job_arrival_schedule)
+    map_instance = Map(operations, ants)
+
+    best_path, best_makespan = map_instance.main(
+        scheduledecoder, jam, local_search=True)

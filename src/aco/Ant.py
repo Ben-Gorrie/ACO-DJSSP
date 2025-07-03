@@ -17,7 +17,7 @@ class Ant:
         # Sequence of scheduled operations
         self.path = []
 
-    def get_eligible_operations(self, all_operations):
+    def get_eligible_operations(self, all_operations, current_time):
         """
         Returns operations whose job-predecessors have already been scheduled.
         If an operation is the first in a job, it is automatically eligible
@@ -29,6 +29,10 @@ class Ant:
         for op in all_operations:
             # Skip all already scheduled operations
             if op.index in scheduled_indices:
+                continue
+
+            # Skip operations who arrive after current time
+            if op.arrival_time > current_time:
                 continue
 
             # If the operation starts a new job, it is eligible
@@ -94,13 +98,13 @@ class Ant:
         """
         self.path = []
 
-    def construct_schedule(self, map_instance):
+    def construct_schedule(self, map_instance, current_time):
         """
         Build a full schedule in valid order
         """
         self.reset()
         all_ops = map_instance.operations
         while len(self.path) < len(all_ops):
-            eligible = self.get_eligible_operations(all_ops)
+            eligible = self.get_eligible_operations(all_ops, current_time)
             op = self.choose_operation(map_instance, eligible)
             self.path.append(op)
