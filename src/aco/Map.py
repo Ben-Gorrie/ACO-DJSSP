@@ -62,9 +62,6 @@ class Map:
         self.global_best_makespan = float("inf")
         self.global_best_path = None
 
-        # Keep track of time
-        self.current_time = 0
-
     def expand_pheromone_matrix(self, new_operations):
         old_n = self.n_ops
         new_n = len(new_operations)
@@ -191,7 +188,7 @@ class Map:
         Find a complete schedule for each ant.
         """
         for ant in self.ants:
-            ant.construct_schedule(self, self.current_time)
+            ant.construct_schedule(self)
 
     def find_best_path(self, decoder):
         """
@@ -251,9 +248,6 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-        # Move time forwards
-        self.current_time += 1
-
     def main(self, decoder, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
         # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
@@ -265,26 +259,26 @@ class Map:
 
         for i in range(max_cycles):
 
-            # Inject new jobs if any
-            if job_arrival_manager:
-                new_ops = job_arrival_manager.get_jobs_arriving_at(
-                    self.current_time)
-                if new_ops:
-                    # Reset global and cycle best paths
-                    self.cycle_best_makespan = float("inf")
-                    self.cycle_best_path = None
-
-                    self.global_best_makespan = float("inf")
-                    self.global_best_path = None
-
-                    if verbose:
-                        print(f"New operations detected at time {
-                              self.current_time}")
-                        print(f"New operations are {
-                              new_ops}. Adding them to operations.")
-                    self.add_operations(new_ops)
-                    self.expand_matrices(self.operations)
-
+            # # Inject new jobs if any
+            # if job_arrival_manager:
+            #     new_ops = job_arrival_manager.get_jobs_arriving_at(
+            #         self.current_time)
+            #     if new_ops:
+            #         # Reset global and cycle best paths
+            #         self.cycle_best_makespan = float("inf")
+            #         self.cycle_best_path = None
+            #
+            #         self.global_best_makespan = float("inf")
+            #         self.global_best_path = None
+            #
+            #         if verbose:
+            #             print(f"New operations detected at time {
+            #                   self.current_time}")
+            #             print(f"New operations are {
+            #                   new_ops}. Adding them to operations.")
+            #         self.add_operations(new_ops)
+            #         self.expand_matrices(self.operations)
+            #
             # Perform a cycle
             self.step(decoder, local_search=local_search)
 
