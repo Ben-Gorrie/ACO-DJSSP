@@ -25,10 +25,11 @@ max_index = operations[-1].index
 
 for op in ops_flat:
     op.index = max_index + 1
+    op.arrival_time = 225
     max_index += 1
 
 job_arrival_schedule = {
-    10: ops_flat
+    225: ops_flat
 }
 
 jam = JobArrivalManager(job_arrival_schedule)

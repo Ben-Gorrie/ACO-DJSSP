@@ -9,7 +9,7 @@ class Operation:
             machine_id (int): Resource required to execute this operation
             processing_time (int or float): Duration of the operation
             arrival_time (int or float): Time at which the operation is known.
-                                        A time later than 0 indicates an operation scheduled 
+                                        A time later than 0 indicates an operation scheduled
                                         dynamically.
         """
         self.index = index
@@ -21,4 +21,4 @@ class Operation:
 
     def __repr__(self):
         return (f"Op(index={self.index}, job={self.job_id}, op={self.operation_id}, "
-                f"machine={self.machine_id}, time={self.processing_time})")
+                f"machine={self.machine_id}, time={self.processing_time}, arrival_time={self.arrival_time})")

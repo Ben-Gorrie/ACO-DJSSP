@@ -10,6 +10,6 @@ class JobArrivalManager:
 
     def get_jobs_arriving_at(self, time):
         """
-        Return the list of new operations arriving at this time
+        Return the list ofnew operations arriving at this time
         """
         return self.schedule.pop(time, [])

@@ -37,7 +37,9 @@ class ScheduleDecoder:
             # Find earliest start time respecting both constraints
             earliest_job_ready = job_latest_end_time.get(job_id, 0)
             earliest_machine_ready = machine_available_time.get(machine_id, 0)
-            start_time = max(earliest_job_ready, earliest_machine_ready)
+            earliest_arrival = getattr(op, "arrival_time", 0)
+            start_time = max(earliest_job_ready,
+                             earliest_machine_ready, earliest_arrival)
 
             end_time = start_time + proc_time
 
