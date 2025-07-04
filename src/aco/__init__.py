@@ -3,4 +3,4 @@ from .Map import Map
 from .Operation import Operation
 from .ScheduleDecoder import ScheduleDecoder
 from .JobArrivalManager import JobArrivalManager
-from .misc import generate_operations_from_jobs, parse_taillard_to_operations, load_instance_with_optimum, find_critical_path, apply_local_search, is_feasible_sequence
+from .misc import *

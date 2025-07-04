@@ -3,6 +3,11 @@ from pathlib import Path
 import json
 from collections import defaultdict
 from copy import deepcopy
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+
+__all__ = ["generate_operations_from_jobs", "parse_taillard_to_operations",
+           "load_instance_with_optimum", "find_critical_path", "apply_local_search", "is_feasible_sequence", "plot_schedule_gantt"]
 
 
 def generate_operations_from_jobs(jobs):
@@ -290,3 +295,70 @@ def is_feasible_sequence(op_sequence):
         if positions != sorted(positions):
             return False  # operation order is violated
     return True
+
+
+def plot_schedule_gantt(operations, schedule, title="Final Schedule (Gantt Chart)"):
+    start_times = schedule["start_times"]
+    end_times = schedule["end_times"]
+
+    # Group by machine
+    machine_to_ops = defaultdict(list)
+    for op in operations:
+        machine_to_ops[op.machine_id].append(op)
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    yticks = []
+    ytick_labels = []
+
+    colors = plt.get_cmap(
+        "tab20", len(set(op.job_id for op in operations)))
+
+    for machine_id, ops in sorted(machine_to_ops.items()):
+        yticks.append(machine_id)
+        ytick_labels.append(f"Machine {machine_id}")
+
+        for op in ops:
+            start = start_times[op.index]
+            end = end_times[op.index]
+            duration = end - start
+
+            # Each job gets a unique color
+            color = colors(op.job_id)
+
+            ax.barh(
+                y=machine_id,
+                width=duration,
+                left=start,
+                height=0.6,
+                color=color,
+                edgecolor="black"
+            )
+
+            ax.text(
+                x=start + duration / 2,
+                y=machine_id,
+                s=f"J{op.job_id}-O{op.operation_id}",
+                va='center',
+                ha='center',
+                color='white',
+                fontsize=8,
+                fontweight='bold'
+            )
+
+    ax.set_xlabel("Time")
+    ax.set_yticks(yticks)
+    ax.set_yticklabels(ytick_labels)
+    ax.set_title(title)
+    ax.invert_yaxis()  # Machines go top-down
+    ax.grid(True, axis='x', linestyle='--', alpha=0.5)
+
+    # Legend for jobs
+    job_ids = sorted(set(op.job_id for op in operations))
+    legend_patches = [mpatches.Patch(color=colors(job_id), label=f"Job {
+                                     job_id}") for job_id in job_ids]
+    ax.legend(handles=legend_patches, title="Jobs",
+              bbox_to_anchor=(1.05, 1), loc='upper left')
+
+    plt.tight_layout()
+    plt.show()

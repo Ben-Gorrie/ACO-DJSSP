@@ -1,13 +1,14 @@
 [project]
 name = "aco"
 version = "0.1.0"
-description = "Ant colony optimisation package"
+description = "Ant colony scheduling optimisation package"
 readme = "README.md"
 authors = [
     { name = "Ben Gorrie", email = "bg721@ic.ac.uk" }
 ]
 requires-python = ">=3.13"
 dependencies = [
+    "matplotlib>=3.10.3",
     "numpy>=2.2.6",
 ]
 
