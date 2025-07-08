@@ -65,3 +65,14 @@
 - **Plan before next meeting**
     - Start working on a DJSSP solver using the MMAS code.
     - Start working on the final project latex files.
+
+## 08/07/2025
+- **Present**: Benjamin Gorrie, Marijan Beg
+- **Key points discussed**
+    - Showed Marijan initial DJSSP solver, simulation runner and visualisation tool (Gantt chart).
+    - Discussed metrics other than makespan (like measuring "disruption" for a schedule).
+- **Feedback received**
+    - Add more types of dynamism: currently only able to add new jobs, but what if machine breaks down, operation overruns etc.
+- **Plan before next meeting**
+    - Fix time travelling ants.
+    - Think about metrics other than makespan.
