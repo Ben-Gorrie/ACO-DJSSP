@@ -17,14 +17,21 @@ class Ant:
         # Sequence of scheduled operations
         self.path = []
 
-    def get_eligible_operations(self, all_operations):
+        # Path that the ant must start with
+        self.locked_path = []
+
+    def set_locked_path(self, locked_operations):
+        self.locked_path = locked_operations.copy()
+
+    def get_eligible_operations(self, all_operations, locked_indices):
         """
         Returns operations whose job-predecessors have already been scheduled.
         If an operation is the first in a job, it is automatically eligible
         (unless it has already been scheduled)
         """
         eligible = []
-        scheduled_indices = {op.index for op in self.path}
+        scheduled_indices = {
+            op.index for op in self.path}.union(locked_indices)
 
         for op in all_operations:
             # Skip all already scheduled operations
@@ -96,15 +103,27 @@ class Ant:
         """
         Reset the position of the ant
         """
-        self.path = []
+        self.path = self.locked_path.copy()
 
-    def construct_schedule(self, map_instance):
+    def construct_schedule(self, map_instance, locked_operations=None):
         """
         Build a full schedule in valid order
         """
         self.reset()
         all_ops = map_instance.operations
+
+        # Add locked operations to path
+        locked_indices = set()
+        if locked_operations:
+            locked_indices = set(locked_operations)
+
         while len(self.path) < len(all_ops):
-            eligible = self.get_eligible_operations(all_ops)
+            eligible = self.get_eligible_operations(all_ops, locked_indices)
+            if not eligible:
+                break
             op = self.choose_operation(map_instance, eligible)
             self.path.append(op)
+
+        # NOTE TO SELF Remove once testing is done
+        assert len(set(op.index for op in self.path)) == len(
+            self.path), "Duplicate operations in ant path!"

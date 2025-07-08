@@ -248,7 +248,7 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
+    def main(self, decoder, locked_operations, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, reset_pheromones_if_sol_not_changed=0.1):
         # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
 
@@ -256,6 +256,11 @@ class Map:
 
         # Keep track of number of iterations where the global best solution does not change
         n_static_iterations = 0
+
+        # Force all ants to start from the locked path
+        for ant in self.ants:
+            ant.set_locked_path(
+                [op for op in self.operations if op.index in locked_operations])
 
         for i in range(max_cycles):
 

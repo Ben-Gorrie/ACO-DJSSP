@@ -40,8 +40,14 @@ sim = Simulator(
     map_instance=map_instance,
     arrival_manager=jam,
     decoder=scheduledecoder,
+    max_time=100
 )
 
 best_path, schedule, best_makespan = sim.run()
+
+
+print("\nFinal path:")
+for op in best_path:
+    print(op)
 
 plot_schedule_gantt(best_path, schedule)
