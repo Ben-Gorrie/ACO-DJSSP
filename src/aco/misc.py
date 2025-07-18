@@ -1,10 +1,12 @@
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 from .Operation import Operation
 from pathlib import Path
 import json
 from collections import defaultdict
 from copy import deepcopy
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
+import matplotlib
+matplotlib.use('Agg')
 
 __all__ = ["generate_operations_from_jobs", "parse_taillard_to_operations",
            "load_instance_with_optimum", "find_critical_path", "apply_local_search", "is_feasible_sequence", "plot_schedule_gantt"]
@@ -96,7 +98,7 @@ def load_instance_with_optimum(jsplib_path, instance_name):
     return optimum, parse_taillard_to_operations(instance_path)
 
 
-def find_critical_path(op_sequence, decoder):
+def find_critical_path(op_sequence, decoder, frozen_indices, current_time):
     """
     Find the critical path (longest path) through a scheduled list of operations
     """
@@ -226,17 +228,21 @@ def _reconstruct_path(end_op, backtrack):
     return path
 
 
-def apply_local_search(op_sequence, decoder):
+def apply_local_search(op_sequence, decoder, frozen_indices=None, current_time=0):
     """
     Apply swap-based local search on critical blocks in the given op_sequence.
     Returns the improved op_sequence (or original if no improvement found).
     """
+    if frozen_indices is None:
+        frozen_indices = set()
+
     best_sequence = deepcopy(op_sequence)
-    best_schedule = decoder.decode(best_sequence)
+    best_schedule = decoder.decode(best_sequence, frozen_indices, current_time)
     best_makespan = best_schedule["makespan"]
 
     # Find critical path
-    critical_path = find_critical_path(best_sequence, decoder)
+    critical_path = find_critical_path(
+        best_sequence, decoder, frozen_indices, current_time)
 
     # Group critical ops by machine
     index_to_op = {op.index: op for op in best_sequence}
@@ -254,6 +260,10 @@ def apply_local_search(op_sequence, decoder):
         for i in range(len(ops) - 1):
             op1, op2 = ops[i], ops[i + 1]
 
+            # Do not swap if either operation is frozen
+            if op1.index in frozen_indices or op2.index in frozen_indices:
+                continue
+
             # Attempt to swap them in the op_sequencec
             swapped_sequence = deepcopy(best_sequence)
 
@@ -270,7 +280,8 @@ def apply_local_search(op_sequence, decoder):
                 continue
 
             # Decode and check new makespan
-            new_schedule = decoder.decode(swapped_sequence)
+            new_schedule = decoder.decode(
+                swapped_sequence, frozen_indices, current_time)
             new_makespan = new_schedule["makespan"]
 
             if new_makespan < best_makespan:
@@ -297,7 +308,15 @@ def is_feasible_sequence(op_sequence):
     return True
 
 
-def plot_schedule_gantt(operations, schedule, title="Final Schedule (Gantt Chart)"):
+def plot_schedule_gantt(operations, schedule, locked_operations=None, title="Final Schedule (Gantt Chart)"):
+    if locked_operations is None:
+        locked_indices = set()
+    else:
+        if all(isinstance(op, int) for op in locked_operations):
+            locked_indices = set(locked_operations)
+        else:
+            locked_indices = {op.index for op in locked_operations}
+
     start_times = schedule["start_times"]
     end_times = schedule["end_times"]
 
@@ -326,13 +345,18 @@ def plot_schedule_gantt(operations, schedule, title="Final Schedule (Gantt Chart
             # Each job gets a unique color
             color = colors(op.job_id)
 
+            is_frozen = op.index in locked_indices
+
             ax.barh(
                 y=machine_id,
                 width=duration,
                 left=start,
                 height=0.6,
                 color=color,
-                edgecolor="black"
+                edgecolor="black",
+                hatch='////' if is_frozen else None,
+                linewidth=2 if is_frozen else 1,
+                alpha=0.5 if is_frozen else 1.0
             )
 
             ax.text(
@@ -357,8 +381,14 @@ def plot_schedule_gantt(operations, schedule, title="Final Schedule (Gantt Chart
     job_ids = sorted(set(op.job_id for op in operations))
     legend_patches = [mpatches.Patch(color=colors(job_id), label=f"Job {
                                      job_id}") for job_id in job_ids]
+    if locked_operations:
+        frozen_patch = mpatches.Patch(
+            facecolor='white', hatch='////', label='Frozen Op', edgecolor='black')
+        legend_patches.append(frozen_patch)
     ax.legend(handles=legend_patches, title="Jobs",
               bbox_to_anchor=(1.05, 1), loc='upper left')
 
     plt.tight_layout()
-    plt.show()
+    # Save when running on wsl
+    # plt.show()
+    plt.savefig("/tmp/gantt.png")

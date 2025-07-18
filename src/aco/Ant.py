@@ -18,6 +18,7 @@ class Ant:
         self.path = []
 
         # Path that the ant must start with
+        # This will be all operations that have already happened
         self.locked_path = []
 
     def set_locked_path(self, locked_operations):
@@ -38,10 +39,6 @@ class Ant:
             if op.index in scheduled_indices:
                 continue
 
-            # Skip operations who arrive after current time
-            # if op.arrival_time > current_time:
-            #     continue
-            #
             # If the operation starts a new job, it is eligible
             if op.operation_id == 0:
                 eligible.append(op)
@@ -105,25 +102,26 @@ class Ant:
         """
         self.path = self.locked_path.copy()
 
-    def construct_schedule(self, map_instance, locked_operations=None):
+    def construct_schedule(self, map_instance):
         """
         Build a full schedule in valid order
         """
         self.reset()
         all_ops = map_instance.operations
 
-        # Add locked operations to path
-        locked_indices = set()
-        if locked_operations:
-            locked_indices = set(locked_operations)
+        # Add locked operations to already scheduled operations
+        locked_indices = set(op.index for op in self.locked_path)
+        scheduled_indices = set(locked_indices)
 
-        while len(self.path) < len(all_ops):
-            eligible = self.get_eligible_operations(all_ops, locked_indices)
+        while len(scheduled_indices) < len(all_ops):
+            eligible = self.get_eligible_operations(all_ops, scheduled_indices)
+            # Double filter
+            # This is likely unnecessary
+            eligible = [
+                op for op in eligible if op.index not in scheduled_indices]
+
             if not eligible:
                 break
             op = self.choose_operation(map_instance, eligible)
             self.path.append(op)
-
-        # NOTE TO SELF Remove once testing is done
-        assert len(set(op.index for op in self.path)) == len(
-            self.path), "Duplicate operations in ant path!"
+            scheduled_indices.add(op.index)

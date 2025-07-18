@@ -10,8 +10,17 @@ class Simulator:
         self.map = map_instance
         self.schedule = None
 
-        # Track operations that have already started
+        # Track operations by index that have already started
         self.locked_operations = set()
+
+        self.frozen_at_last_replan = set()
+
+    @property
+    def locked_ops(self):
+        """
+        Return actual Operation objects corresponding to locked operation indices.
+        """
+        return [op for op in self.map.operations if op.index in self.locked_operations]
 
     def tick(self):
         if self.verbose:
@@ -45,8 +54,22 @@ class Simulator:
         if self.verbose:
             print(f"[t={self.current_time}] Replanning schedule")
 
-        self.map.main(self.decoder, self.locked_operations)
-        self.schedule = self.decoder.decode(self.map.global_best_path)
+        # Set the locked path for each ant
+        for ant in self.map.ants:
+            ant.set_locked_path(self.locked_ops)
+
+        # Get the start times for the frozen operations
+        frozen_start_times = {
+            op.index: self.schedule["start_times"][op.index]
+            for op in self.locked_ops
+        }
+
+        self.frozen_at_last_replan = set(self.locked_operations)
+
+        self.map.main(self.decoder, self.locked_operations,
+                      self.current_time, local_search=False, frozen_start_times=frozen_start_times)
+        self.schedule = self.decoder.decode(
+            self.map.global_best_path, self.locked_operations, self.current_time, frozen_start_times=frozen_start_times)
 
     def execute_until(self, time):
         if not self.schedule:
