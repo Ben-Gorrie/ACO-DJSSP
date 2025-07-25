@@ -76,3 +76,14 @@
 - **Plan before next meeting**
     - Fix time travelling ants.
     - Think about metrics other than makespan.
+
+## 22/07/2025
+- **Present**: Benjamin Gorrie, Marijan Beg
+- **Key points discussed**
+    - Showed Marijan updated DJSSP solver. Large parts of my time spent fixing "time travelling" ants.
+    - Discussed metrics other than makespan again. This is the next thing I need to develop.
+    - Showed Marijan the priority system the ants currently implement. Marijan seemed happy with this
+- **Feedback received**
+    - Once the new metric is developed, keep track of how it evolves as new features are added.
+- **Plan before next meeting**
+    - Develop new metric to measure performance.
