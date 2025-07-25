@@ -26,6 +26,9 @@ max_index = operations[-1].index
 for op in ops_flat:
     op.index = max_index + 1
     op.arrival_time = 25
+    # Test arrival of an urgent job
+    op.priority = 0
+
     max_index += 1
 
 job_arrival_schedule = {

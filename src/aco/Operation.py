@@ -1,6 +1,6 @@
 # Class to define an operation in a job
 class Operation:
-    def __init__(self, index, job_id, operation_id, machine_id, processing_time, arrival_time=0):
+    def __init__(self, index, job_id, operation_id, machine_id, processing_time, arrival_time=0, priority=1):
         """
         Parameters:
             index (int): Unique index for this operation
@@ -18,6 +18,7 @@ class Operation:
         self.machine_id = machine_id
         self.processing_time = processing_time
         self.arrival_time = arrival_time
+        self.priority = priority
 
     def __repr__(self):
         return (f"Op(index={self.index}, job={self.job_id}, op={self.operation_id}, "

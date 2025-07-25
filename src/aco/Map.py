@@ -38,6 +38,7 @@ class Map:
         # Fill in desirability matrix using a weighted combination of:
         # - processing time (shorter is better)
         # - number of remaining operations in the job (fewer is better)
+        # - operation priority
         self.desirability_matrix = np.zeros((self.n_ops, self.n_ops))
         for i in range(self.n_ops):
             for j in range(self.n_ops):
@@ -47,8 +48,11 @@ class Map:
                 total_ops_in_job = job_op_counts[to_op.job_id]
                 remaining_ops = total_ops_in_job - to_op.operation_id
 
+                job_priority = self.operations[j].priority
+                priority_score = 1 - job_priority
+
                 # Prevent division by zero
-                self.desirability_matrix[i][j] = 1.0 / \
+                self.desirability_matrix[i][j] = priority_score / \
                     (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
 
         # List of ant objects
@@ -94,8 +98,11 @@ class Map:
                 total_ops_in_job = job_op_counts[to_op.job_id]
                 remaining_ops = total_ops_in_job - to_op.operation_id
 
+                job_priority = self.operations[j].priority
+                priority_score = 1.0 / (1 + job_priority)
+
                 # Prevent division by zero
-                new_desirability_matrix[i][j] = 1.0 / \
+                new_desirability_matrix[i][j] = priority_score / \
                     (1e-6 + 0.8 * proc_time + 0.2 * remaining_ops)
 
         self.desirability_matrix = new_desirability_matrix

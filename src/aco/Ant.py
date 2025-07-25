@@ -53,6 +53,13 @@ class Ant:
                 if prev_op and prev_op.index in scheduled_indices:
                     eligible.append(op)
 
+        # Priority filter
+        if eligible:
+            min_priority = min(op.priority for op in eligible)
+            if min_priority <= 0.2:
+                eligible = [
+                    op for op in eligible if op.priority == min_priority]
+
         return eligible
 
     def move_probabilities(self, map_instance, eligible_ops):
