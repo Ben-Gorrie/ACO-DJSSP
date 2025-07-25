@@ -49,7 +49,7 @@ class Map:
                 remaining_ops = total_ops_in_job - to_op.operation_id
 
                 job_priority = self.operations[j].priority
-                priority_score = 1 - job_priority
+                priority_score = 1.01 - job_priority
 
                 # Prevent division by zero
                 self.desirability_matrix[i][j] = priority_score / \
@@ -99,7 +99,7 @@ class Map:
                 remaining_ops = total_ops_in_job - to_op.operation_id
 
                 job_priority = self.operations[j].priority
-                priority_score = 1.0 / (1 + job_priority)
+                priority_score = 1.01 - job_priority
 
                 # Prevent division by zero
                 new_desirability_matrix[i][j] = priority_score / \
