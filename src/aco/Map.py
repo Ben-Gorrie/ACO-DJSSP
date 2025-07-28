@@ -62,9 +62,15 @@ class Map:
         self.cycle_best_makespan = float("inf")
         self.cycle_best_path = None
 
+        # Best current "cost", a combination of makespan and "disruptiveness"
+        self.cycle_best_cost = float("inf")
+
         # Global best makespan found and associated path
         self.global_best_makespan = float("inf")
         self.global_best_path = None
+
+        # Global best cost
+        self.global_best_cost = float("inf")
 
     def expand_pheromone_matrix(self, new_operations):
         old_n = self.n_ops
@@ -133,7 +139,7 @@ class Map:
         """
         # Find maximum allowed pheromone trail
         self.tau_max = 1 / \
-            ((1 - self.pheromone_evaporation_coefficient) * self.global_best_makespan)
+            ((1 - self.pheromone_evaporation_coefficient) * self.global_best_cost)
 
         p_best = 0.05
 
@@ -169,10 +175,10 @@ class Map:
 
         # Create new pheromones from solution
         if use_global_best_path:
-            pheromones_to_deposit = 1 / self.global_best_makespan
+            pheromones_to_deposit = 1 / self.global_best_cost
             sol_to_update = self.global_best_path
         else:
-            pheromones_to_deposit = 1 / self.cycle_best_makespan
+            pheromones_to_deposit = 1 / self.cycle_best_cost
             sol_to_update = self.cycle_best_path
 
         # Deposit created pheromones
@@ -243,7 +249,10 @@ class Map:
                 best_makespan = makespan
                 best_path = ant_path.copy()
 
-        return best_path, best_makespan
+        if lambda_disruption == 0:
+            assert best_cost == best_makespan
+
+        return best_path, best_makespan, best_cost
 
     # def find_best_path(self, decoder, frozen_indices, current_time, frozen_start_times):
     #     """
@@ -273,7 +282,7 @@ class Map:
             b = path[i + 1].index
             self.pheromone_matrix[a][b] *= penalty
 
-    def step(self, decoder, frozen_indices, current_time, previous_start_times, use_global_best_path=False, local_search=True, frozen_start_times=None):
+    def step(self, decoder, frozen_indices, current_time, previous_start_times, use_global_best_path=False, local_search=True, frozen_start_times=None, lambda_disruption=1):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
@@ -285,8 +294,8 @@ class Map:
             self.construct_solutions(frozen_indices)
 
             # Update the best path found this step
-            best_path, best_makespan = self.find_best_path(
-                decoder, frozen_indices, current_time, frozen_start_times, previous_start_times=previous_start_times)
+            best_path, best_makespan, best_cost = self.find_best_path(
+                decoder, frozen_indices, current_time, frozen_start_times, previous_start_times=previous_start_times, lambda_disruption=lambda_disruption)
 
             # Use local search if enabled
             if local_search:
@@ -295,6 +304,7 @@ class Map:
 
             self.cycle_best_path = best_path
             self.cycle_best_makespan = best_makespan
+            self.cycle_best_cost = best_cost
 
         # Update pheromones
         self.pheromone_update(use_global_best_path)
@@ -306,7 +316,7 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, frozen_indices, current_time, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, frozen_start_times=None, reset_pheromones_if_sol_not_changed=0.1, previous_start_times=None):
+    def main(self, decoder, frozen_indices, current_time, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, frozen_start_times=None, reset_pheromones_if_sol_not_changed=0.1, previous_start_times=None, lambda_disruption=1):
         # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
 
@@ -319,13 +329,14 @@ class Map:
 
             # Perform a cycle
             self.step(decoder, frozen_indices, current_time, previous_start_times=previous_start_times,
-                      local_search=local_search, frozen_start_times=frozen_start_times)
+                      local_search=local_search, frozen_start_times=frozen_start_times, lambda_disruption=lambda_disruption)
 
             # If new global best solution found
-            if self.cycle_best_makespan < self.global_best_makespan:
+            if self.cycle_best_cost < self.global_best_cost:
                 # Keep track of it
                 self.global_best_makespan = self.cycle_best_makespan
                 self.global_best_path = self.cycle_best_path
+                self.global_best_cost = self.cycle_best_cost
 
                 # Update pheromone bounds
                 self.calculate_new_pheromone_bounds()
@@ -334,8 +345,8 @@ class Map:
                 n_static_iterations = 0
 
                 if verbose:
-                    print(f"New best path of makespan {
-                          self.global_best_makespan} found at cycle {i + 1}.")
+                    print(f"New best path of cost {
+                          self.cycle_best_cost:.2f} and makespan {self.cycle_best_makespan} found at cycle {i + 1}.")
 
             # PTS
             if (i % 20 == 0 and i != 0):

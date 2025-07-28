@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 optimal_makespan, operations = load_instance_with_optimum(
-    Path("/home/ben/Documents/Imperial_content/Assignments/JSPLIB/"), "ft06")
+    Path("/home/bg721/JSPLIB/"), "la01")
 ants = [Ant() for i in range(len(operations))]
 scheduledecoder = ScheduleDecoder(operations)
 
@@ -46,7 +46,8 @@ sim = Simulator(
     max_time=100
 )
 
-best_path, schedule, best_makespan = sim.run(plot_initial_schedule=True)
+best_path, schedule, best_makespan = sim.run(
+    plot_initial_schedule=True, lambda_disruption=1)
 
 plot_schedule_gantt(best_path, schedule,
                     locked_operations=sim.frozen_at_last_replan)

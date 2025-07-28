@@ -25,7 +25,7 @@ class Simulator:
         """
         return [op for op in self.map.operations if op.index in self.locked_operations]
 
-    def tick(self):
+    def tick(self, lambda_disruption=1):
         if self.verbose:
             print(f"\n===== Time {self.current_time} =====")
 
@@ -42,18 +42,20 @@ class Simulator:
             self.map.add_operations(new_ops)
             self.map.expand_matrices(self.map.operations)
 
-            # Reset makespan and path
+            # Reset makespan, path and cost
             self.map.cycle_best_makespan = float("inf")
             self.map.cycle_best_path = None
+            self.map.cycle_best_cost = float("inf")
 
             self.map.global_best_makespan = float("inf")
             self.map.global_best_path = None
+            self.map.global_best_cost = float("inf")
 
-            self.replan()
+            self.replan(lambda_disruption=lambda_disruption)
 
         self.current_time += 1
 
-    def replan(self):
+    def replan(self, lambda_disruption=1):
         if self.verbose:
             print(f"[t={self.current_time}] Replanning schedule")
 
@@ -75,7 +77,7 @@ class Simulator:
             previous_start_times = self.schedule["start_times"]
 
         self.map.main(self.decoder, self.locked_operations,
-                      self.current_time, local_search=False, frozen_start_times=frozen_start_times, previous_start_times=previous_start_times)
+                      self.current_time, local_search=False, frozen_start_times=frozen_start_times, previous_start_times=previous_start_times, lambda_disruption=lambda_disruption)
         self.schedule = self.decoder.decode(
             self.map.global_best_path, self.locked_operations, self.current_time, frozen_start_times=frozen_start_times)
 
@@ -97,9 +99,9 @@ class Simulator:
             for op, start, end in executing:
                 print(f"  - {op} (from {start} to {end})")
 
-    def run(self, plot_initial_schedule=False):
+    def run(self, plot_initial_schedule=False, lambda_disruption=1):
         # Initial schedule
-        self.replan()
+        self.replan(lambda_disruption=lambda_disruption)
 
         # OPtionally plot initial schedule
         if plot_initial_schedule:
@@ -107,7 +109,7 @@ class Simulator:
                                 title="Initial schedule", path="/tmp/gantt_initial.png")
 
         while self.current_time < self.max_time:
-            self.tick()
+            self.tick(lambda_disruption=lambda_disruption)
 
         print("\nSimulation complete.")
         print(f"Best makespan: {self.map.global_best_makespan}")

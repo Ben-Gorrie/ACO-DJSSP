@@ -394,10 +394,24 @@ def plot_schedule_gantt(operations, schedule, locked_operations=None, title="Fin
     plt.savefig(path)
 
 
-def compute_disruption(path, new_start_times, previous_start_times, locked_indices, current_time):
+def compute_disruption(path, new_start_times, previous_start_times, locked_indices, current_time, normalise=False):
+    """
+    Parameters:
+        path: List[Operation] The current ant path
+        new_start_times: Dict[int, int]  Start times from the new schedule
+        previous_start_times: Dict[int, int]  Start times from last global schedule
+        locked_indices: Set[int]  Operations that are truly frozen
+        current_time: int  Current time of the simulation
+        normalise: Bool  Whether or not to normalise the disruption by the number of affected operations
+
+    Returns:
+        total_disruption (float): Sum of absolute deviations in start times for previously scheduled ops that have not yet started.
+    """
     if previous_start_times is None:
         return 0.0
     total_disruption = 0.0
+    n_affected_ops = 0
+
     for op in path:
         if op.index in locked_indices:
             # Fully frozen ops
@@ -406,7 +420,12 @@ def compute_disruption(path, new_start_times, previous_start_times, locked_indic
         if op.index in previous_start_times:
             prev_start = previous_start_times[op.index]
             if prev_start > current_time:
+                n_affected_ops += 1
                 new_start = new_start_times.get(op.index)
                 if new_start is not None:
                     total_disruption += abs(new_start - prev_start)
+
+    if normalise:
+        total_disruption /= n_affected_ops
+
     return total_disruption

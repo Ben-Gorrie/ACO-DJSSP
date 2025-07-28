@@ -56,7 +56,8 @@ class Ant:
         # Priority filter
         if eligible:
             min_priority = min(op.priority for op in eligible)
-            if min_priority <= 0.2:
+            # Operations with a priority of 0 need to be scheduled immediately
+            if min_priority == 0:
                 eligible = [
                     op for op in eligible if op.priority == min_priority]
 
