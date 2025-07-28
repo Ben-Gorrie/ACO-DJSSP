@@ -1,3 +1,6 @@
+from .misc import plot_schedule_gantt
+
+
 class Simulator:
     def __init__(self, map_instance, arrival_manager, decoder, max_time=480, verbose=True):
         self.current_time = 0
@@ -66,8 +69,13 @@ class Simulator:
 
         self.frozen_at_last_replan = set(self.locked_operations)
 
+        if self.current_time == 0:
+            previous_start_times = None
+        else:
+            previous_start_times = self.schedule["start_times"]
+
         self.map.main(self.decoder, self.locked_operations,
-                      self.current_time, local_search=False, frozen_start_times=frozen_start_times)
+                      self.current_time, local_search=False, frozen_start_times=frozen_start_times, previous_start_times=previous_start_times)
         self.schedule = self.decoder.decode(
             self.map.global_best_path, self.locked_operations, self.current_time, frozen_start_times=frozen_start_times)
 
@@ -89,9 +97,14 @@ class Simulator:
             for op, start, end in executing:
                 print(f"  - {op} (from {start} to {end})")
 
-    def run(self):
+    def run(self, plot_initial_schedule=False):
         # Initial schedule
         self.replan()
+
+        # OPtionally plot initial schedule
+        if plot_initial_schedule:
+            plot_schedule_gantt(self.map.global_best_path, self.schedule,
+                                title="Initial schedule", path="/tmp/gantt_initial.png")
 
         while self.current_time < self.max_time:
             self.tick()

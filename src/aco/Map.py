@@ -1,6 +1,6 @@
 import numpy as np
 from collections import defaultdict
-from .misc import apply_local_search
+from .misc import apply_local_search, compute_disruption
 
 
 class Map:
@@ -208,22 +208,60 @@ class Map:
             ant.set_locked_path(locked_path)
             ant.construct_schedule(self)
 
-    def find_best_path(self, decoder, frozen_indices, current_time, frozen_start_times):
+    def find_best_path(self, decoder, frozen_indices, current_time, frozen_start_times, previous_start_times, lambda_disruption=1.0):
         """
-        Finds the best path found by an ant in a cycle.
-        Returns the path and its associated makespan
+        Finds the best path found by an ant in a cycle using a composite metric:
+        total_cost = makespan + lambda * disruption
+
+        Returns:
+            path: best path (lowest total cost)
+            makespan: its makespan
         """
         best_path = None
         best_makespan = float("inf")
+        best_cost = float("inf")
+
         for ant in self.ants:
             ant_path = ant.path
-            makespan = self.calculate_makespan(
-                decoder, ant_path, frozen_indices, current_time, frozen_start_times)
-            if makespan < best_makespan:
+            result = decoder.decode(
+                ant_path, frozen_indices, current_time, frozen_start_times)
+            start_times = result["start_times"]
+            makespan = result["makespan"]
+
+            disruption = compute_disruption(
+                path=ant_path,
+                new_start_times=start_times,
+                previous_start_times=previous_start_times,
+                locked_indices=frozen_indices,
+                current_time=current_time
+            )
+
+            total_cost = makespan + lambda_disruption * disruption
+
+            if total_cost < best_cost:
+                best_cost = total_cost
                 best_makespan = makespan
                 best_path = ant_path.copy()
 
         return best_path, best_makespan
+
+    # def find_best_path(self, decoder, frozen_indices, current_time, frozen_start_times):
+    #     """
+    #     Finds the best path found by an ant in a cycle.
+    #     Returns the path and its associated makespan
+    #     """
+    #     best_path = None
+    #     best_makespan = float("inf")
+    #     for ant in self.ants:
+    #         ant_path = ant.path
+    #         makespan = self.calculate_makespan(
+    #             decoder, ant_path, frozen_indices, current_time, frozen_start_times)
+    #         if makespan < best_makespan:
+    #             best_makespan = makespan
+    #             best_path = ant_path.copy()
+    #
+    #     return best_path, best_makespan
+    #
 
     def penalize_path(self, path, penalty=0.1):
         """
@@ -235,7 +273,7 @@ class Map:
             b = path[i + 1].index
             self.pheromone_matrix[a][b] *= penalty
 
-    def step(self, decoder, frozen_indices, current_time, use_global_best_path=False, local_search=True, frozen_start_times=None):
+    def step(self, decoder, frozen_indices, current_time, previous_start_times, use_global_best_path=False, local_search=True, frozen_start_times=None):
         """
         Function to be called repeatedly.
         Completes one cycle of all ants finding a path,
@@ -248,7 +286,7 @@ class Map:
 
             # Update the best path found this step
             best_path, best_makespan = self.find_best_path(
-                decoder, frozen_indices, current_time, frozen_start_times)
+                decoder, frozen_indices, current_time, frozen_start_times, previous_start_times=previous_start_times)
 
             # Use local search if enabled
             if local_search:
@@ -268,7 +306,7 @@ class Map:
         for ant in self.ants:
             ant.reset()
 
-    def main(self, decoder, frozen_indices, current_time, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, frozen_start_times=None, reset_pheromones_if_sol_not_changed=0.1):
+    def main(self, decoder, frozen_indices, current_time, job_arrival_manager=None, max_cycles=1000, verbose=True, local_search=True, frozen_start_times=None, reset_pheromones_if_sol_not_changed=0.1, previous_start_times=None):
         # Define the maximum number of iterations where the global best solution does not change
         max_static_iterations = reset_pheromones_if_sol_not_changed * max_cycles
 
@@ -280,7 +318,7 @@ class Map:
         for i in range(max_cycles):
 
             # Perform a cycle
-            self.step(decoder, frozen_indices, current_time,
+            self.step(decoder, frozen_indices, current_time, previous_start_times=previous_start_times,
                       local_search=local_search, frozen_start_times=frozen_start_times)
 
             # If new global best solution found

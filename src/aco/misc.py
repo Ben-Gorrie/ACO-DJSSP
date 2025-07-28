@@ -9,7 +9,7 @@ import matplotlib
 matplotlib.use('Agg')
 
 __all__ = ["generate_operations_from_jobs", "parse_taillard_to_operations",
-           "load_instance_with_optimum", "find_critical_path", "apply_local_search", "is_feasible_sequence", "plot_schedule_gantt"]
+           "load_instance_with_optimum", "find_critical_path", "apply_local_search", "is_feasible_sequence", "plot_schedule_gantt", "compute_disruption"]
 
 
 def generate_operations_from_jobs(jobs):
@@ -308,7 +308,7 @@ def is_feasible_sequence(op_sequence):
     return True
 
 
-def plot_schedule_gantt(operations, schedule, locked_operations=None, title="Final Schedule (Gantt Chart)"):
+def plot_schedule_gantt(operations, schedule, locked_operations=None, title="Final Schedule (Gantt Chart)", path="/tmp/gantt.png"):
     if locked_operations is None:
         locked_indices = set()
     else:
@@ -391,4 +391,22 @@ def plot_schedule_gantt(operations, schedule, locked_operations=None, title="Fin
     plt.tight_layout()
     # Save when running on wsl
     # plt.show()
-    plt.savefig("/tmp/gantt.png")
+    plt.savefig(path)
+
+
+def compute_disruption(path, new_start_times, previous_start_times, locked_indices, current_time):
+    if previous_start_times is None:
+        return 0.0
+    total_disruption = 0.0
+    for op in path:
+        if op.index in locked_indices:
+            # Fully frozen ops
+            continue
+
+        if op.index in previous_start_times:
+            prev_start = previous_start_times[op.index]
+            if prev_start > current_time:
+                new_start = new_start_times.get(op.index)
+                if new_start is not None:
+                    total_disruption += abs(new_start - prev_start)
+    return total_disruption
