@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 optimal_makespan, operations = load_instance_with_optimum(
-    Path("/home/bg721/JSPLIB/"), "la01")
+    Path("/home/bg721/JSPLIB/"), "ft06")
 ants = [Ant() for i in range(len(operations))]
 scheduledecoder = ScheduleDecoder(operations)
 
@@ -27,7 +27,7 @@ for op in ops_flat:
     op.index = max_index + 1
     op.arrival_time = 25
     # Test arrival of an urgent job
-    op.priority = 0
+    op.priority = 1
 
     max_index += 1
 

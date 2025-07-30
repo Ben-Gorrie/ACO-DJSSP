@@ -72,6 +72,9 @@ class Map:
         # Global best cost
         self.global_best_cost = float("inf")
 
+        # Store a copy of the best pheromone matrix to use when replanning
+        self.best_pheromone_matrix = self.pheromone_matrix
+
     def expand_pheromone_matrix(self, new_operations):
         old_n = self.n_ops
         new_n = len(new_operations)
@@ -79,8 +82,9 @@ class Map:
         # Create new pheromone matrix
         new_pheromones = np.full(
             (new_n, new_n), self.tau_max + 1.5)
-        # Copy old pheromone values over
-        new_pheromones[:old_n, :old_n] = self.pheromone_matrix
+        # Copy old pheromone values over from best pheromone matrix
+        # This avoids starting from scratch again
+        new_pheromones[:old_n, :old_n] = self.best_pheromone_matrix
         self.pheromone_matrix = new_pheromones
 
     def expand_desirability_matrix(self, new_operations):
@@ -337,6 +341,7 @@ class Map:
                 self.global_best_makespan = self.cycle_best_makespan
                 self.global_best_path = self.cycle_best_path
                 self.global_best_cost = self.cycle_best_cost
+                self.best_pheromone_matrix = self.pheromone_matrix
 
                 # Update pheromone bounds
                 self.calculate_new_pheromone_bounds()
