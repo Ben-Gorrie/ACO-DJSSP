@@ -1,1 +1,1 @@
-# Ant Colony Optimasation applied to the Dynamic Job Shop Scheduling problem
+# Ant Colony Optimisation applied to the Dynamic Job Shop Scheduling problem
